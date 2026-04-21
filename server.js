@@ -15,6 +15,8 @@ const USER = {
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 
 app.use(
   session({
@@ -39,7 +41,8 @@ app.get("/", (req, res) => {
   if (req.session.usuarioLogado) {
     return res.redirect("/dashboard");
   }
-  res.sendFile(path.join(__dirname, "views", "login.html"));
+
+  res.render("login", { erro: null });
 });
 
 // Processa login
@@ -51,6 +54,7 @@ app.post("/login", (req, res) => {
     req.session.email = email;
     return res.redirect("/dashboard");
   }
+
 
   return res.send(`
     <script>
@@ -74,4 +78,8 @@ app.get("/logout", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
+
+app.get("/cadastro", (req, res) => {
+  res.render("cadastro", { mensagem: null });
 });
