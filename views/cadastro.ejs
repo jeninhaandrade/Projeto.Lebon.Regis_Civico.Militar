@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Login</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="container">
+
+    <div class="card">
+      <img src="/css/img/logo.png" alt="Logo da escola" class="logo" />
+
+      <p class="subtitle">Cadastro de novos acessos ao sistema</p>
+
+      <% if (mensagem) { %>
+        <div class="error"><%= mensagem %></div>
+      <% } %>
+
+      <form class="form-cadastro" method="POST" action="/cadastro">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" placeholder="Digite o nome completo" required />
+
+        <label for="cpf">CPF</label>
+        <input type="text" id="cpf" name="cpf" placeholder="Digite o CPF" maxlength="14" required />
+
+        <label for="usuario">Usuário</label>
+        <input type="text" id="usuario" name="usuario" placeholder="Digite o usuário" required />
+
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" placeholder="Digite a senha" required />
+
+        <button type="submit">Cadastrar</button>
+      </form>
+
+      <div class="register-link">
+        <p>Já tem uma conta?</p>
+        <a href="/login">Entrar</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    //formatando cpf de 12345 para 123.456 etc
+    const cpfInput = document.getElementById("cpf");
+
+    cpfInput.addEventListener("input", function (e) {
+      let value = e.target.value.replace(/\D/g, "");
+      value = value.replace(/(\d{3})(\d)/, "$1.$2");
+      value = value.replace(/(\d{3})(\d)/, "$1.$2");
+      value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      e.target.value = value;
+    });
+  </script>
+</body>
+</html>
