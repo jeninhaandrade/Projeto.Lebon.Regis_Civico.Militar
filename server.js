@@ -1,85 +1,166 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const express = require("express");
-const path = require("path");
-const session = require("express-session");
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const usersFilePath = path.join(__dirname, 'data', 'users.json');
 
-// Usuário fixo para teste
-const USER = {
-  email: "admin@admin.com",
-  password: "123456"
-};
-
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "segredo_padrao",
+    secret: process.env.SESSION_SECRET || 'minha_sessao_secreta',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }
+    cookie: {
+      secure: false,
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 2
+    }
   })
 );
 
-app.use(express.static(path.join(__dirname, "public")));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-function authMiddleware(req, res, next) {
-  if (req.session.usuarioLogado) {
-    return next();
+function lerUsuarios() {
+  try {
+    if (!fs.existsSync(usersFilePath)) {
+      fs.writeFileSync(usersFilePath, '[]', 'utf8');
+    }
+
+    const data = fs.readFileSync(usersFilePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Erro ao ler usuários:', error);
+    return [];
   }
-  return res.redirect("/");
 }
 
-// Tela inicial de login
-app.get("/", (req, res) => {
-  if (req.session.usuarioLogado) {
-    return res.redirect("/dashboard");
+function salvarUsuarios(usuarios) {
+  try {
+    fs.writeFileSync(usersFilePath, JSON.stringify(usuarios, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Erro ao salvar usuários:', error);
+  }
+}
+
+
+function verificarLogin(req, res, next) {
+  if (req.session.usuario) {
+    return next();
+  }
+  return res.redirect('/login');
+}
+
+// rota inicial
+app.get('/', (req, res) => {
+  if (req.session.usuario) {
+    return res.redirect('/dashboard');
+  }
+  return res.redirect('/login');
+});
+
+
+app.get('/login', (req, res) => {
+  if (req.session.usuario) {
+    return res.redirect('/dashboard');
   }
 
-  res.render("login", { erro: null });
+  res.render('login', {
+    titulo: 'Login',
+    erro: null
+  });
 });
 
-// Processa login
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
 
-  if (email === USER.email && password === USER.password) {
-    req.session.usuarioLogado = true;
-    req.session.email = email;
-    return res.redirect("/dashboard");
+app.post('/login', (req, res) => {
+  const { login, password } = req.body;
+  const usuarios = lerUsuarios();
+
+  const usuarioEncontrado = usuarios.find(
+    (usuario) => usuario.login === login && usuario.password === password
+  );
+
+  if (!usuarioEncontrado) {
+    return res.render('login', {
+      titulo: 'Login',
+      erro: 'Login ou senha inválidos'
+    });
   }
 
+  req.session.usuario = {
+    login: usuarioEncontrado.login,
+    nome: usuarioEncontrado.nome
+  };
 
-  return res.send(`
-    <script>
-      alert("Email ou senha inválidos!");
-      window.location.href = "/";
-    </script>
-  `);
+  return res.redirect('/dashboard');
 });
 
-// Dashboard protegida
-app.get("/dashboard", authMiddleware, (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "dashboard.html"));
+
+app.get('/cadastro', (req, res) => {
+  if (req.session.usuario) {
+    return res.redirect('/dashboard');
+  }
+
+  res.render('cadastro', {
+    titulo: 'Cadastro',
+    mensagem: null
+  });
 });
 
-// Logout
-app.get("/logout", (req, res) => {
+//cadastro
+
+app.post('/cadastro', (req, res) => {
+  const { nome, cpf, usuario, senha } = req.body;
+
+  const usuarios = lerUsuarios();
+
+  const loginExistente = usuarios.find(
+    (item) => item.login === usuario || item.cpf === cpf
+  );
+
+  if (loginExistente) {
+    return res.render('cadastro', {
+      titulo: 'Cadastro',
+      mensagem: 'Usuário ou CPF já cadastrado.'
+    });
+  }
+
+  const novoUsuario = {
+    nome,
+    cpf,
+    login: usuario,
+    password: senha
+  };
+
+  usuarios.push(novoUsuario);
+  salvarUsuarios(usuarios);
+
+  return res.redirect('/login'); // apos cadastro retorna pro login
+});
+
+
+app.get('/dashboard', verificarLogin, (req, res) => {
+  res.render('dashboard', {
+    titulo: 'Dashboard',
+    usuario: req.session.usuario
+  });
+});
+
+// logout
+app.get('/logout', (req, res) => {
   req.session.destroy(() => {
-    res.redirect("/");
+    res.redirect('/login');
   });
 });
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
-
-app.get("/cadastro", (req, res) => {
-  res.render("cadastro", { mensagem: null });
 });
