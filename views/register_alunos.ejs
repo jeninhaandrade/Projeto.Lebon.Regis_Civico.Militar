@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title><%= titulo %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+
+<body class="bg-light">
+
+  <aside class="sidebar text-bg-dark" id="sidebar">
+    <div class="d-flex flex-column p-3 h-100">
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 sidebar-title">Painel</h4>
+
+        <button id="toggleSidebar" class="btn btn-dark border-0">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <ul class="nav nav-pills flex-column gap-2">
+        <li>
+          <a href="/dashboard" class="nav-link text-white">
+            <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="/alunos" class="nav-link active">
+            <i class="bi bi-people me-2"></i><span>Alunos</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="#" class="nav-link text-white">
+            <i class="bi bi-check2-square me-2"></i><span>Presenças</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="#" class="nav-link text-white">
+            <i class="bi bi-exclamation-triangle me-2"></i><span>Ocorrências</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="#" class="nav-link text-white">
+            <i class="bi bi-star me-2"></i><span>Pontuação</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="/leitor-qrcode" target="_blank" class="nav-link text-white">
+            <i class="bi bi-qr-code-scan me-2"></i><span>Leitor QR Code</span>
+          </a>
+        </li>
+      </ul>
+
+      <hr>
+
+      <a href="/logout" class="btn btn-outline-light mt-auto logout-btn">
+        <i class="bi bi-box-arrow-right me-2"></i><span>Sair</span>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content p-4">
+    <div class="container-fluid">
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3 mb-1">Alunos</h1>
+          <p class="text-muted mb-0">Cadastro e gerenciamento de alunos</p>
+
+          <% if (typeof sucesso !== 'undefined' || (typeof query !== 'undefined' && query.sucesso === 'cadastro')) { %>
+            <div id="alertaSucesso" class="alert alert-success border-0 shadow-sm rounded-4 mt-3 sucesso-animado" role="alert">
+              <div class="d-flex align-items-center">
+
+                <div class="icone-sucesso me-3">
+                  <i class="bi bi-check-lg"></i>
+                </div>
+
+                <div>
+                  <strong>Aluno cadastrado com sucesso!</strong>
+                  <div class="small">O aluno foi adicionado à lista de ativos.</div>
+                </div>
+
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <button class="btn btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#modalAluno">
+          <i class="bi bi-plus-circle me-2"></i>
+          Novo Aluno
+        </button>
+      </div>
+
+      <div class="row g-4 mb-4">
+
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body">
+              <p class="text-muted mb-1">Total de Alunos</p>
+              <h3 class="mb-0">
+                <%= alunos.filter(a => a.ativo !== false).length %>
+              </h3>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4">
+
+        <div class="card-header bg-white border-0 py-3">
+
+          <h5 class="mb-3">Lista de alunos cadastrados</h5>
+
+          <ul class="nav nav-tabs mb-3">
+
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ativos">
+                Ativos
+              </button>
+            </li>
+
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#inativos">
+                Inativos
+              </button>
+            </li>
+
+          </ul>
+
+        </div>
+
+        <div class="card-body">
+
+          <!-- FILTRO NOVO -->
+          <form method="GET" action="/alunos" class="filtro-alunos mb-4">
+
+            <div class="row g-3 align-items-center">
+
+              <!-- Busca -->
+              <div class="col-12 col-lg-7">
+
+                <div class="input-group busca-group">
+
+                  <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                  </span>
+
+                  <input
+                    type="text"
+                    name="busca"
+                    class="form-control border-start-0 shadow-none"
+                    placeholder="Buscar aluno por nome, CPF ou matrícula..."
+                    value="<%= busca || '' %>"
+                  >
+
+                </div>
+
+              </div>
+
+              <!-- Ordenação -->
+              <div class="col-12 col-md-6 col-lg-3">
+
+                <select name="ordem" class="form-select filtro-select shadow-none">
+
+                  <option value="">Ordenar por</option>
+
+                  <option value="az" <%= ordem === 'az' ? 'selected' : '' %>>
+                    Nome A → Z
+                  </option>
+
+                  <option value="za" <%= ordem === 'za' ? 'selected' : '' %>>
+                    Nome Z → A
+                  </option>
+
+                </select>
+
+              </div>
+
+              <!-- Botão -->
+              <div class="col-12 col-md-6 col-lg-2 d-grid">
+
+                <button class="btn btn-primary btn-buscar">
+                  <i class="bi bi-funnel me-2"></i>
+                  Buscar
+                </button>
+
+              </div>
+
+            </div>
+
+          </form>
+
+          <div class="tab-content">
+
+            <!-- ABA ATIVOS -->
+            <div class="tab-pane fade show active" id="ativos">
+
+              <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                  <thead class="table-light">
+                    <tr>
+                      <th>Nome</th>
+                      <th>CPF</th>
+                      <th>Matrícula</th>
+                      <th>Status</th>
+                      <th>Ação</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    <% const alunosAtivos = alunos.filter(a => a.ativo !== false); %>
+
+                    <% if (alunosAtivos.length === 0) { %>
+
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                          Nenhum aluno ativo cadastrado.
+                        </td>
+                      </tr>
+
+                    <% } %>
+
+                    <% alunosAtivos.forEach(aluno => { %>
+
+                      <tr>
+
+                        <td><%= aluno.nome %></td>
+                        <td><%= aluno.cpf %></td>
+                        <td><%= aluno.matricula %></td>
+
+                        <td>
+                          <span class="badge text-bg-success">
+                            Ativo
+                          </span>
+                        </td>
+
+                        <td>
+
+                          <form action="/alunos/<%= aluno.id %>/desativar" method="POST" style="display: inline;">
+
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                              Desativar
+                            </button>
+
+                          </form>
+
+                        </td>
+
+                      </tr>
+
+                    <% }) %>
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+            <!-- ABA INATIVOS -->
+            <div class="tab-pane fade" id="inativos">
+
+              <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                  <thead class="table-light">
+                    <tr>
+                      <th>Nome</th>
+                      <th>CPF</th>
+                      <th>Matrícula</th>
+                      <th>Status</th>
+                      <th>Ação</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+
+                    <% const alunosInativos = alunos.filter(a => a.ativo === false); %>
+
+                    <% if (alunosInativos.length === 0) { %>
+
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                          Nenhum aluno inativo.
+                        </td>
+                      </tr>
+
+                    <% } %>
+
+                    <% alunosInativos.forEach(aluno => { %>
+
+                      <tr>
+
+                        <td><%= aluno.nome %></td>
+                        <td><%= aluno.cpf %></td>
+                        <td><%= aluno.matricula %></td>
+
+                        <td>
+                          <span class="badge text-bg-danger">
+                            Inativo
+                          </span>
+                        </td>
+
+                        <td>
+
+                          <form action="/alunos/<%= aluno.id %>/ativar" method="POST" style="display: inline;">
+
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                              Reativar
+                            </button>
+
+                          </form>
+
+                        </td>
+
+                      </tr>
+
+                    <% }) %>
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <div class="modal fade" id="modalAluno" tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+      <div class="modal-content rounded-4 border-0">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Cadastrar aluno</h5>
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <form action="/alunos/cadastrar" method="POST">
+
+          <div class="modal-body">
+
+            <div class="mb-3">
+              <label class="form-label">Nome completo</label>
+              <input type="text" name="nome" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">CPF</label>
+              <input type="text" name="cpf" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Matrícula</label>
+              <input type="text" name="matricula" class="form-control" required>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-2"></i>
+              Salvar aluno
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/dashboard.js"></script>
+
+</body>
+</html>
