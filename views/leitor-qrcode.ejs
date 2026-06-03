@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title><%= titulo || 'Leitor QR Code' %></title>
+
+  <link rel="stylesheet" href="/css/leitor-qrcode.css">
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body>
+  <main class="container">
+    <h1>Entrada de Alunos</h1>
+
+    <p>Aproxime o QR Code da carteirinha</p>
+
+    <div id="reader"></div>
+
+    <div id="status" class="status">
+      Aguardando leitura...
+    </div>
+  </main>
+
+  <script src="/js/leitor-qrcode.js"></script>
+</body>
+</html>
