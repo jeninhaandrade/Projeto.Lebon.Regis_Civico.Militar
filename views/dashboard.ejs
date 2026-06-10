@@ -32,12 +32,18 @@
 
         <li>
           <a href="/alunos" class="nav-link text-white">
-            <i class="bi bi-people me-2"></i><span>Alunos</span>
+            <i class="bi bi-people me-2"></i><span>Registros de Alunos</span>
           </a>
         </li>
 
         <li>
-          <a href="#" class="nav-link text-white">
+          <a href="/presencas" class="nav-link text-white">
+            <i class="bi bi-check2-square me-2"></i><span>Presenças</span>
+          </a>
+        </li>
+
+        <li>
+          <a class="nav-link text-white opacity-50 disabled" aria-disabled="true">
             <i class="bi bi-exclamation-triangle me-2"></i><span>Ocorrências</span>
           </a>
         </li>
@@ -94,7 +100,7 @@
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <p class="text-muted mb-1">Presenças</p>
-                  <h3 class="mb-0"><%= totalPresencas %></h3>
+                  <h3 class="mb-0" id="totalPresencas"><%= totalPresencas %></h3>
                 </div>
                 <i class="bi bi-check-circle fs-1 text-success"></i>
               </div>
@@ -151,7 +157,7 @@
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody id="tabelaPresencas" data-presencas-view="resumo">
                 <% if (registros.length === 0) { %>
                   <tr>
                     <td colspan="4" class="text-center text-muted py-4">
@@ -163,10 +169,10 @@
                 <% registros.forEach(registro => { %>
                   <tr>
                     <td><%= registro.nome %></td>
-                    <td><%= registro.turma %></td>
+                    <td><%= registro.turma || '-' %></td>
                     <td>
                       <span class="badge text-bg-success">
-                        <%= registro.status %>
+                        <%= registro.status || 'presente' %>
                       </span>
                     </td>
                     <td><%= registro.dataHora %></td>
