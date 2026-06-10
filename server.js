@@ -175,6 +175,7 @@ app.get('/dashboard', verificarLogin, (req, res) => {
 
   res.render('dashboard', {
     titulo: 'Dashboard',
+    activePage: 'dashboard',
     usuario: req.session.usuario,
     totalAlunos: alunosAtivos.length,
     totalPresencas: registros.length,
@@ -231,6 +232,8 @@ app.post('/registrar-qrcode', (req, res) => {
     nome: alunoEncontrado.nome,
     turma: alunoEncontrado.turma || '',
     status: 'concluido',
+    status: 'presente',
+
     dataHora: new Date().toLocaleString('pt-BR')
   };
 
@@ -240,6 +243,7 @@ app.post('/registrar-qrcode', (req, res) => {
   return res.json({
     sucesso: true,
     status: 'concluido',
+    status: 'presente',
     mensagem: 'Entrada registrada com sucesso.',
     registro: novoRegistro
   });
@@ -282,6 +286,7 @@ app.get('/alunos', verificarLogin, (req, res) => {
 
   res.render('register_alunos', {
     titulo: 'Alunos',
+    activePage: 'alunos',
     usuario: req.session.usuario,
     alunos,
     busca,
@@ -351,15 +356,66 @@ app.post('/alunos/:id/ativar', verificarLogin, (req, res) => {
   return res.redirect('/alunos');
 });
 
+
 app.get('/pontuacoes', verificarLogin, (req, res) => {
   const alunos = lerAlunos();
   const pontuacoes = lerJSON(pontuacoesPath);
 
   res.render('pontuacao', {
     titulo: 'Controle de Pontuação',
+    activePage: 'pontuacoes',
     usuario: req.session.usuario,
     alunos,
     pontuacoes
+  });
+});
+
+app.get('/ocorrencias', verificarLogin, (req, res) => {
+  res.render('ocorrencias', {
+    titulo: 'Ocorrências',
+    activePage: 'ocorrencias',
+    usuario: req.session.usuario
+  });
+});
+
+app.get('/presencas', verificarLogin, (req, res) => {
+  const alunos = lerAlunos();
+  const registros = lerJSON(registrosPath);
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  
+  const alunosAtivos = alunos.filter(
+    aluno => aluno.ativo !== false
+  );
+
+  const presentesHoje = registros.filter(
+    registro =>
+      registro.dataHora &&
+      registro.dataHora.startsWith(hoje)
+  );
+
+  const idsPresentesHoje = presentesHoje.map(
+    registro => String(registro.alunoId)
+  );
+  
+  const faltantesHoje = alunosAtivos.filter(
+    aluno => !idsPresentesHoje.includes(String(aluno.id))
+  );
+
+  res.render('presencas', {
+    titulo: 'Presenças',
+    activePage: 'presencas',
+    usuario: req.session.usuario,
+
+    totalPresencas: registros.length,
+
+    totalAlunos: alunosAtivos.length,
+    totalPresentesHoje: presentesHoje.length,
+    totalFaltantesHoje: faltantesHoje.length,
+
+    registros: registros.reverse(),
+    faltantesHoje
   });
 });
 
