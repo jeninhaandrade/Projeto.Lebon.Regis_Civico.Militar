@@ -8,4 +8,22 @@ CREATE TABLE usuarios (
     login VARCHAR(50) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL);
     
-    
+ALTER TABLE alunos
+ADD COLUMN pontuacao_total INTEGER DEFAULT 0;
+
+CREATE TABLE historico_pontuacao (
+  id SERIAL PRIMARY KEY,
+  aluno_id INTEGER NOT NULL,
+  tipo VARCHAR(20) NOT NULL, -- adicionar ou remover
+  pontos INTEGER NOT NULL,
+  observacao TEXT NOT NULL,
+  pontuacao_anterior INTEGER NOT NULL,
+  pontuacao_atual INTEGER NOT NULL,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_aluno
+    FOREIGN KEY (aluno_id)
+    REFERENCES alunos(id)
+    ON DELETE CASCADE
+);
+      
