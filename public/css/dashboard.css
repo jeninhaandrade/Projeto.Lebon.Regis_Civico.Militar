@@ -128,9 +128,9 @@
   }
 }
 
-/* =========================================
-   FILTRO DE ALUNOS
-========================================= */
+
+/*filtro dos alunos*/
+
 
 .filtro-alunos {
   background: #f8fafc;
@@ -184,4 +184,37 @@
 
 .btn-buscar:hover {
   transform: translateY(-1px);
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.presencas-filtros {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 170px 110px;
+  gap: 12px;
+  align-items: center;
+  width: min(100%, 720px);
+}
+
+.presencas-filtros .busca-group,
+.presencas-filtros .filtro-select,
+.presencas-filtros .btn-buscar {
+  height: 46px;
+}
+
+.presencas-filtros .btn-buscar {
+  white-space: nowrap;
+}
+
+@media (max-width: 992px) {
+  .presencas-filtros {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .presencas-filtros .btn-buscar {
+    width: 100%;
+  }
 }
