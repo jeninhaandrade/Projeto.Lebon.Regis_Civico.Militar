@@ -23,43 +23,7 @@
         </button>
       </div>
 
-      <ul class="nav nav-pills flex-column gap-2">
-        <li>
-          <a href="/dashboard" class="nav-link active">
-            <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
-          </a>
-        </li>
-
-        <li>
-          <a href="/alunos" class="nav-link text-white">
-            <i class="bi bi-people me-2"></i><span>Registros de Alunos</span>
-          </a>
-        </li>
-
-        <li>
-          <a href="/presencas" class="nav-link text-white">
-            <i class="bi bi-check2-square me-2"></i><span>Presenças</span>
-          </a>
-        </li>
-
-        <li>
-          <a class="nav-link text-white opacity-50 disabled" aria-disabled="true">
-            <i class="bi bi-exclamation-triangle me-2"></i><span>Ocorrências</span>
-          </a>
-        </li>
-
-        <li>
-          <a href="/pontuacoes" class="nav-link text-white">
-            <i class="bi bi-star me-2"></i><span>Pontuação</span>
-          </a>
-        </li>
-
-        <li>
-          <a href="/leitor-qrcode" target="_blank" class="nav-link text-white">
-            <i class="bi bi-qr-code-scan me-2"></i><span>Leitor QR Code</span>
-          </a>
-        </li>
-      </ul>
+      <%- include('partials/sidebar') %>
 
       <hr>
 

@@ -175,6 +175,7 @@ app.get('/dashboard', verificarLogin, (req, res) => {
 
   res.render('dashboard', {
     titulo: 'Dashboard',
+    activePage: 'dashboard',
     usuario: req.session.usuario,
     totalAlunos: alunosAtivos.length,
     totalPresencas: registros.length,
@@ -285,6 +286,7 @@ app.get('/alunos', verificarLogin, (req, res) => {
 
   res.render('register_alunos', {
     titulo: 'Alunos',
+    activePage: 'alunos',
     usuario: req.session.usuario,
     alunos,
     busca,
@@ -361,9 +363,18 @@ app.get('/pontuacoes', verificarLogin, (req, res) => {
 
   res.render('pontuacao', {
     titulo: 'Controle de Pontuação',
+    activePage: 'pontuacoes',
     usuario: req.session.usuario,
     alunos,
     pontuacoes
+  });
+});
+
+app.get('/ocorrencias', verificarLogin, (req, res) => {
+  res.render('ocorrencias', {
+    titulo: 'Ocorrências',
+    activePage: 'ocorrencias',
+    usuario: req.session.usuario
   });
 });
 
@@ -394,6 +405,7 @@ app.get('/presencas', verificarLogin, (req, res) => {
 
   res.render('presencas', {
     titulo: 'Presenças',
+    activePage: 'presencas',
     usuario: req.session.usuario,
 
     totalPresencas: registros.length,
