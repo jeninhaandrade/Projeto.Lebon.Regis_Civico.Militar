@@ -231,6 +231,8 @@ app.post('/registrar-qrcode', (req, res) => {
     nome: alunoEncontrado.nome,
     turma: alunoEncontrado.turma || '',
     status: 'concluido',
+    status: 'presente',
+
     dataHora: new Date().toLocaleString('pt-BR')
   };
 
@@ -240,6 +242,7 @@ app.post('/registrar-qrcode', (req, res) => {
   return res.json({
     sucesso: true,
     status: 'concluido',
+    status: 'presente',
     mensagem: 'Entrada registrada com sucesso.',
     registro: novoRegistro
   });
@@ -351,6 +354,7 @@ app.post('/alunos/:id/ativar', verificarLogin, (req, res) => {
   return res.redirect('/alunos');
 });
 
+
 app.get('/pontuacoes', verificarLogin, (req, res) => {
   const alunos = lerAlunos();
   const pontuacoes = lerJSON(pontuacoesPath);
@@ -360,6 +364,46 @@ app.get('/pontuacoes', verificarLogin, (req, res) => {
     usuario: req.session.usuario,
     alunos,
     pontuacoes
+  });
+});
+
+app.get('/presencas', verificarLogin, (req, res) => {
+  const alunos = lerAlunos();
+  const registros = lerJSON(registrosPath);
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  
+  const alunosAtivos = alunos.filter(
+    aluno => aluno.ativo !== false
+  );
+
+  const presentesHoje = registros.filter(
+    registro =>
+      registro.dataHora &&
+      registro.dataHora.startsWith(hoje)
+  );
+
+  const idsPresentesHoje = presentesHoje.map(
+    registro => String(registro.alunoId)
+  );
+  
+  const faltantesHoje = alunosAtivos.filter(
+    aluno => !idsPresentesHoje.includes(String(aluno.id))
+  );
+
+  res.render('presencas', {
+    titulo: 'Presenças',
+    usuario: req.session.usuario,
+
+    totalPresencas: registros.length,
+
+    totalAlunos: alunosAtivos.length,
+    totalPresentesHoje: presentesHoje.length,
+    totalFaltantesHoje: faltantesHoje.length,
+
+    registros: registros.reverse(),
+    faltantesHoje
   });
 });
 
