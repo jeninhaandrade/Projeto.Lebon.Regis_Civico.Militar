@@ -378,6 +378,14 @@ app.get('/ocorrencias', verificarLogin, (req, res) => {
   });
 });
 
+app.get('/advertencias', verificarLogin, (req, res) => {
+  res.render('advertencias', {
+    titulo: 'Advertências',
+    activePage: 'advertencias',
+    usuario: req.session.usuario
+  });
+});
+
 app.get('/presencas', verificarLogin, (req, res) => {
   const alunos = lerAlunos();
   const registros = lerJSON(registrosPath);
