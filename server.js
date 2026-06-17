@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 const usersFilePath = path.join(__dirname, 'data', 'users.json');
 const alunosPath = path.join(__dirname, 'data', 'alunos.json');
 const registrosPath = path.join(__dirname,'data', 'registros-qrcode.json');
+const pontuacoesPath = path.join(__dirname, 'data', 'pontuacoes.json');
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -174,6 +175,7 @@ app.get('/dashboard', verificarLogin, (req, res) => {
 
   res.render('dashboard', {
     titulo: 'Dashboard',
+    activePage: 'dashboard',
     usuario: req.session.usuario,
     totalAlunos: alunosAtivos.length,
     totalPresencas: registros.length,
@@ -229,7 +231,9 @@ app.post('/registrar-qrcode', (req, res) => {
     alunoId: alunoEncontrado.id,
     nome: alunoEncontrado.nome,
     turma: alunoEncontrado.turma || '',
+    status: 'concluido',
     status: 'presente',
+
     dataHora: new Date().toLocaleString('pt-BR')
   };
 
@@ -238,6 +242,7 @@ app.post('/registrar-qrcode', (req, res) => {
 
   return res.json({
     sucesso: true,
+    status: 'concluido',
     status: 'presente',
     mensagem: 'Entrada registrada com sucesso.',
     registro: novoRegistro
@@ -281,6 +286,7 @@ app.get('/alunos', verificarLogin, (req, res) => {
 
   res.render('register_alunos', {
     titulo: 'Alunos',
+    activePage: 'alunos',
     usuario: req.session.usuario,
     alunos,
     busca,
@@ -350,6 +356,36 @@ app.post('/alunos/:id/ativar', verificarLogin, (req, res) => {
   return res.redirect('/alunos');
 });
 
+
+app.get('/pontuacoes', verificarLogin, (req, res) => {
+  const alunos = lerAlunos();
+  const pontuacoes = lerJSON(pontuacoesPath);
+
+  res.render('pontuacao', {
+    titulo: 'Controle de Pontuação',
+    activePage: 'pontuacoes',
+    usuario: req.session.usuario,
+    alunos,
+    pontuacoes
+  });
+});
+
+app.get('/ocorrencias', verificarLogin, (req, res) => {
+  res.render('ocorrencias', {
+    titulo: 'Ocorrências',
+    activePage: 'ocorrencias',
+    usuario: req.session.usuario
+  });
+});
+
+app.get('/advertencias', verificarLogin, (req, res) => {
+  res.render('advertencias', {
+    titulo: 'Advertências',
+    activePage: 'advertencias',
+    usuario: req.session.usuario
+  });
+});
+
 app.get('/presencas', verificarLogin, (req, res) => {
   const alunos = lerAlunos();
   const registros = lerJSON(registrosPath);
@@ -377,6 +413,7 @@ app.get('/presencas', verificarLogin, (req, res) => {
 
   res.render('presencas', {
     titulo: 'Presenças',
+    activePage: 'presencas',
     usuario: req.session.usuario,
 
     totalPresencas: registros.length,

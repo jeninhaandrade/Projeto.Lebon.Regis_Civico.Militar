@@ -1,31 +1,42 @@
+<%
+  const itemAtivo = typeof activePage !== 'undefined' ? activePage : '';
+  const classeMenu = (pagina) => `nav-link ${itemAtivo === pagina ? 'active' : 'text-white'}`;
+%>
+
 <ul class="nav nav-pills flex-column gap-2">
 
   <li>
-    <a href="/dashboard" class="nav-link active">
+    <a href="/dashboard" class="<%= classeMenu('dashboard') %>">
       <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
     </a>
   </li>
 
   <li>
-    <a href="/alunos" class="nav-link text-white">
-      <i class="bi bi-people me-2"></i><span>Alunos</span>
+    <a href="/alunos" class="<%= classeMenu('alunos') %>">
+      <i class="bi bi-people me-2"></i><span>Registros de Alunos</span>
     </a>
   </li>
 
   <li>
-    <a href="/presencas" class="nav-link text-white">
+    <a href="/presencas" class="<%= classeMenu('presencas') %>">
       <i class="bi bi-check2-square me-2"></i><span>Presenças</span>
     </a>
   </li>
 
   <li>
-    <a href="/ocorrencias" class="nav-link text-white">
+    <a href="/ocorrencias" class="<%= classeMenu('ocorrencias') %>">
       <i class="bi bi-exclamation-triangle me-2"></i><span>Ocorrências</span>
     </a>
   </li>
 
   <li>
-    <a href="/pontuacoes" class="nav-link text-white">
+    <a href="/advertencias" class="<%= classeMenu('advertencias') %>">
+      <i class="bi bi-exclamation-octagon me-2"></i><span>Advertências</span>
+    </a>
+  </li>
+
+  <li>
+    <a href="/pontuacoes" class="<%= classeMenu('pontuacoes') %>">
       <i class="bi bi-star me-2"></i><span>Pontuação</span>
     </a>
   </li>
