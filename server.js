@@ -7,6 +7,11 @@ const fs = require('fs');
 const bcrypt = require('bcrypt');
 
 const app = express();
+
+app.get('/teste-rota', (req, res) => {
+  res.send("O servidor atualizou e a rota está funcionando!");
+});
+
 const PORT = process.env.PORT || 3000;
 const SALT_ROUNDS = 10;
 
@@ -428,12 +433,63 @@ app.get('/ocorrencias', verificarLogin, (req, res) => {
   });
 });
 
+// 1. Listagem de Advertências (Atualizada para ler os dados reais)
 app.get('/advertencias', verificarLogin, (req, res) => {
+  const advertencias = lerJSON(advertenciasPath);
+  const alunos = lerAlunos();
+
+  const listaAdvertencias = advertencias.map(adv => {
+    const alunoEncontrado = alunos.find(a => String(a.id) === String(adv.alunoId));
+    return {
+      ...adv,
+      nomeAluno: alunoEncontrado ? alunoEncontrado.nome : 'Aluno não encontrado',
+      turma: alunoEncontrado ? alunoEncontrado.turma : ''
+    };
+  }).reverse();
+
   res.render('advertencias', {
     titulo: 'Advertências',
     activePage: 'advertencias',
-    usuario: req.session.usuario
+    usuario: req.session.usuario,
+    advertencias: listaAdvertencias
   });
+});
+
+// 2. Tela do Formulário de Cadastro de Advertência
+app.get('/advertencias/nova', verificarLogin, (req, res) => {
+  const alunos = lerAlunos();
+  const alunosAtivos = alunos.filter(aluno => aluno.ativo !== false);
+
+  res.render('cadastro-advertencia', {
+    titulo: 'Cadastrar Advertência',
+    activePage: 'advertencias',
+    usuario: req.session.usuario,
+    alunos: alunosAtivos
+  });
+});
+
+// 3. Processamento do Formulário (Salvar no JSON)
+app.post('/advertencias/salvar', verificarLogin, (req, res) => {
+  const { alunoId, motivo } = req.body;
+
+  if (!alunoId || !motivo) {
+    return res.redirect('/advertencias/nova?erro=campos_obrigatorios');
+  }
+
+  const advertencias = lerJSON(advertenciasPath);
+
+  const novaAdvertencia = {
+    id: String(Date.now()),
+    alunoId: alunoId,
+    motivo: motivo,
+    responsavel: req.session.usuario.nome || req.session.usuario.login,
+    data: new Date().toLocaleString('pt-BR')
+  };
+
+  advertencias.push(novaAdvertencia);
+  salvarJSON(advertenciasPath, advertencias);
+
+  return res.redirect('/advertencias');
 });
 
 app.get('/advertencias/relatorio', verificarLogin, (req, res) => {
