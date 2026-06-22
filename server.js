@@ -4,14 +4,17 @@ const express = require('express');
 const path = require('path');
 const session = require('express-session');
 const fs = require('fs');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SALT_ROUNDS = 10;
 
 const usersFilePath = path.join(__dirname, 'data', 'users.json');
 const alunosPath = path.join(__dirname, 'data', 'alunos.json');
 const registrosPath = path.join(__dirname,'data', 'registros-qrcode.json');
 const pontuacoesPath = path.join(__dirname, 'data', 'pontuacoes.json');
+const advertenciasPath = path.join(__dirname, 'data', 'advertencias.json');
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -65,12 +68,47 @@ function salvarUsuarios(usuarios) {
   salvarJSON(usersFilePath, usuarios);
 }
 
+function senhaEstaComHash(senha) {
+  return typeof senha === 'string' && senha.startsWith('$2');
+}
+
 function lerAlunos() {
   return lerJSON(alunosPath);
 }
 
 function salvarAlunos(alunos) {
   salvarJSON(alunosPath, alunos);
+}
+
+function obterDataAdvertencia(advertencia) {
+  return advertencia.data || advertencia.dataHora || advertencia.criadoEm || '';
+}
+
+function converterDataFiltro(data) {
+  if (!data) {
+    return null;
+  }
+
+  const dataConvertida = new Date(`${data}T00:00:00`);
+  return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
+}
+
+function converterDataAdvertencia(data) {
+  if (!data) {
+    return null;
+  }
+
+  const [dataParte] = String(data).split(/[,\s]/);
+  const partes = dataParte.split('/');
+
+  if (partes.length === 3) {
+    const [dia, mes, ano] = partes;
+    const dataConvertida = new Date(`${ano}-${mes}-${dia}T00:00:00`);
+    return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
+  }
+
+  const dataConvertida = new Date(data);
+  return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
 }
 
 function verificarLogin(req, res, next) {
@@ -101,15 +139,27 @@ app.get('/login', (req, res) => {
   });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { login, password } = req.body;
   const usuarios = lerUsuarios();
 
-  const usuarioEncontrado = usuarios.find(
-    usuario => usuario.login === login && usuario.password === password
-  );
+  const usuarioEncontrado = usuarios.find(usuario => usuario.login === login);
+  let senhaValida = false;
 
-  if (!usuarioEncontrado) {
+  if (usuarioEncontrado) {
+    if (senhaEstaComHash(usuarioEncontrado.password)) {
+      senhaValida = await bcrypt.compare(password, usuarioEncontrado.password);
+    } else {
+      senhaValida = usuarioEncontrado.password === password;
+
+      if (senhaValida) {
+        usuarioEncontrado.password = await bcrypt.hash(password, SALT_ROUNDS);
+        salvarUsuarios(usuarios);
+      }
+    }
+  }
+
+  if (!usuarioEncontrado || !senhaValida) {
     return res.render('login', {
       titulo: 'Login',
       erro: 'Login ou senha inválidos'
@@ -138,7 +188,7 @@ app.get('/cadastro', (req, res) => {
   });
 });
 
-app.post('/cadastro', (req, res) => {
+app.post('/cadastro', async (req, res) => {
   const { nome, cpf, usuario, senha } = req.body;
   const usuarios = lerUsuarios();
 
@@ -157,7 +207,7 @@ app.post('/cadastro', (req, res) => {
     nome,
     cpf,
     login: usuario,
-    password: senha
+    password: await bcrypt.hash(senha, SALT_ROUNDS)
   };
 
   usuarios.push(novoUsuario);
@@ -375,6 +425,66 @@ app.get('/ocorrencias', verificarLogin, (req, res) => {
     titulo: 'Ocorrências',
     activePage: 'ocorrencias',
     usuario: req.session.usuario
+  });
+});
+
+app.get('/advertencias', verificarLogin, (req, res) => {
+  res.render('advertencias', {
+    titulo: 'Advertências',
+    activePage: 'advertencias',
+    usuario: req.session.usuario
+  });
+});
+
+app.get('/advertencias/relatorio', verificarLogin, (req, res) => {
+  const { aluno, dataInicio, dataFim } = req.query;
+  const alunos = lerAlunos();
+  const advertencias = lerJSON(advertenciasPath);
+  const inicio = converterDataFiltro(dataInicio);
+  const fim = converterDataFiltro(dataFim);
+
+  if (fim) {
+    fim.setHours(23, 59, 59, 999);
+  }
+
+  const advertenciasFormatadas = advertencias
+    .map(advertencia => {
+      const alunoReferencia = advertencia.alunoId || advertencia.idAluno || advertencia.aluno_id || advertencia.aluno;
+      const alunoEncontrado = alunos.find(item =>
+        String(item.id) === String(alunoReferencia) || item.nome === advertencia.aluno
+      );
+
+      return {
+        ...advertencia,
+        alunoId: alunoEncontrado?.id || alunoReferencia,
+        data: obterDataAdvertencia(advertencia),
+        nomeAluno: advertencia.nomeAluno || advertencia.aluno || alunoEncontrado?.nome || 'Aluno não informado',
+        turma: advertencia.turma || alunoEncontrado?.turma || '',
+        motivo: advertencia.motivo || advertencia.descricao || advertencia.observacao || '',
+        responsavel: advertencia.responsavel || advertencia.professor || advertencia.usuario || ''
+      };
+    })
+    .filter(advertencia => {
+      const dataAdvertencia = converterDataAdvertencia(advertencia.data);
+      const alunoCorresponde = !aluno || String(advertencia.alunoId) === String(aluno);
+      const inicioCorresponde = !inicio || (dataAdvertencia && dataAdvertencia >= inicio);
+      const fimCorresponde = !fim || (dataAdvertencia && dataAdvertencia <= fim);
+
+      return alunoCorresponde && inicioCorresponde && fimCorresponde;
+    });
+
+  res.render('relatorio_advertencias', {
+    titulo: 'Relatório de Advertências',
+    activePage: 'advertencias',
+    usuario: req.session.usuario,
+    alunos,
+    advertencias: advertenciasFormatadas,
+    filtros: {
+      aluno: aluno || '',
+      dataInicio: dataInicio || '',
+      dataFim: dataFim || ''
+    },
+    dataEmissao: new Date().toLocaleString('pt-BR')
   });
 });
 
