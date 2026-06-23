@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td>${escaparHTML(registro.nome)}</td>
       <td>${textoOuTraco(registro.matricula)}</td>
       <td>${textoOuTraco(registro.cpf)}</td>
+      <td>${textoOuTraco(registro.rg)}</td>
       <td>${textoOuTraco(registro.turma)}</td>
       <td>
         <span class="badge text-bg-success">
@@ -92,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const registros = await resposta.json();
       const registrosRecentes = registros.slice().reverse();
-      const colspan = visualizacao === 'completo' ? 6 : 4;
+      const colspan = visualizacao === 'completo' ? 7 : 4;
       const hoje = dataLocalISO();
       const textoBusca = normalizarBusca(buscaPresenca ? buscaPresenca.value : '');
       const dataFiltro = filtroDataPresenca ? filtroDataPresenca.value : '';
@@ -102,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
           registro.nome,
           registro.matricula,
           registro.cpf,
+          registro.rg,
           registro.turma,
           registro.status
         ].join(' '));

@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "1781748268336",
+    "alunoId": "1",
+    "motivo": "Veio sem farda",
+    "responsavel": "joao neves",
+    "data": "17/06/2026, 23:04:28"
+  },
+  {
+    "id": "1781748719020",
+    "alunoId": "1",
+    "motivo": "Xingou a professora",
+    "responsavel": "joao neves",
+    "data": "17/06/2026, 23:11:59"
+  },
+  {
+    "id": "1782223251712",
+    "alunoId": "1",
+    "motivo": "não veio de uniforme ",
+    "responsavel": "teste",
+    "data": "23/06/2026, 11:00:51"
+  }
+]

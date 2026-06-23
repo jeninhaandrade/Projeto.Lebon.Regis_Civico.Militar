@@ -3,12 +3,18 @@
     "nome": "joao neves",
     "cpf": "117.950.350-30",
     "login": "joao@neves",
-    "password": "$2b$10$E/XE08rEYk0mP/pznjHTROQBfkKhDUki1qgiwJaUHxsCOKvwjgF8G" 
+    "password": "$2b$10$E/XE08rEYk0mP/pznjHTROQBfkKhDUki1qgiwJaUHxsCOKvwjgF8G"
   },
   {
     "nome": "Giovana",
     "cpf": "123.445.678-99",
     "login": "gi",
     "password": "$2b$10$hpDx7TCMaofQzv5PVWk67../4co.CKO5msbKGWcLCIDp5CrtJ45m."
+  },
+  {
+    "nome": "teste",
+    "cpf": "123.445.678-90",
+    "login": "teste",
+    "password": "$2b$10$ZmIcYuKGW61M7FiB1dYMB.clK8fM3mxqoulyuIRtQ4yVzmAx4Ogzq"
   }
 ]
