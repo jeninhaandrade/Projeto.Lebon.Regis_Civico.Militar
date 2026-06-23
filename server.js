@@ -142,27 +142,6 @@ function normalizarDocumento(valor) {
   return String(valor || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
 }
 
-function cpfValido(valor) {
-  const cpf = normalizarCodigo(valor);
-
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
-    return false;
-  }
-
-  const calcularDigito = (base, pesoInicial) => {
-    const soma = base
-      .split('')
-      .reduce((total, numero, indice) => total + Number(numero) * (pesoInicial - indice), 0);
-    const resto = (soma * 10) % 11;
-    return resto === 10 ? 0 : resto;
-  };
-
-  return (
-    calcularDigito(cpf.slice(0, 9), 10) === Number(cpf[9]) &&
-    calcularDigito(cpf.slice(0, 10), 11) === Number(cpf[10])
-  );
-}
-
 function rgValido(valor) {
   const rg = normalizarDocumento(valor);
   return rg.length >= 5 && rg.length <= 14 && !/^([0X])\1+$/.test(rg);
@@ -190,14 +169,6 @@ function codigoCorrespondeIdentificador(valorAluno, codigoOriginal, codigoNormal
     valorNormalizado === codigoNormalizado ||
     (valorNormalizado.length >= 4 && codigoNormalizado.includes(valorNormalizado))
   );
-}
-
-function codigoCorrespondeCpf(valorAluno, codigoOriginal) {
-  if (!cpfValido(valorAluno)) {
-    return false;
-  }
-
-  return codigoContemDocumento(codigoOriginal, normalizarCodigo(valorAluno));
 }
 
 function codigoCorrespondeRg(valorAluno, codigoOriginal) {
@@ -286,23 +257,22 @@ app.get('/cadastro', (req, res) => {
 });
 
 app.post('/cadastro', async (req, res) => {
-  const { nome, cpf, usuario, senha } = req.body;
+  const { nome, usuario, senha } = req.body;
   const usuarios = lerUsuarios();
 
   const loginExistente = usuarios.find(
-    item => item.login === usuario || item.cpf === cpf
+    item => item.login === usuario
   );
 
   if (loginExistente) {
     return res.render('cadastro', {
       titulo: 'Cadastro',
-      mensagem: 'Usuário ou CPF já cadastrado.'
+      mensagem: 'Usuário já cadastrado.'
     });
   }
 
   const novoUsuario = {
     nome,
-    cpf,
     login: usuario,
     password: await bcrypt.hash(senha, SALT_ROUNDS)
   };
@@ -357,7 +327,6 @@ app.post('/registrar-qrcode', (req, res) => {
     return (
       codigoCorrespondeIdentificador(aluno.id, codigoOriginal, codigoNormalizado) ||
       codigoCorrespondeIdentificador(aluno.matricula, codigoOriginal, codigoNormalizado) ||
-      codigoCorrespondeCpf(aluno.cpf, codigoOriginal) ||
       codigoCorrespondeRg(aluno.rg, codigoOriginal)
     );
   });
@@ -366,7 +335,7 @@ app.post('/registrar-qrcode', (req, res) => {
     return res.status(409).json({
       sucesso: false,
       status: 'duplicado',
-      mensagem: 'Mais de um aluno corresponde ao código lido. Confira CPF/RG/matrícula.'
+      mensagem: 'Mais de um aluno corresponde ao código lido. Confira RG/matrícula.'
     });
   }
 
@@ -395,7 +364,6 @@ app.post('/registrar-qrcode', (req, res) => {
     alunoId: alunoEncontrado.id,
     nome: alunoEncontrado.nome,
     matricula: alunoEncontrado.matricula || '',
-    cpf: alunoEncontrado.cpf || '',
     rg: alunoEncontrado.rg || '',
     turma: alunoEncontrado.turma || '',
     status: 'presente',
@@ -430,13 +398,11 @@ app.get('/alunos', verificarLogin, (req, res) => {
   if (busca) {
     alunos = alunos.filter(aluno => {
       const nome = aluno.nome || '';
-      const cpf = aluno.cpf || '';
       const rg = aluno.rg || '';
       const matricula = aluno.matricula || '';
 
       return (
         nome.toLowerCase().includes(busca.toLowerCase()) ||
-        cpf.includes(busca) ||
         rg.toLowerCase().includes(busca.toLowerCase()) ||
         matricula.toLowerCase().includes(busca.toLowerCase())
       );
@@ -464,20 +430,14 @@ app.get('/alunos', verificarLogin, (req, res) => {
 
 
 app.post('/alunos/cadastrar', verificarLogin, (req, res) => {
-  const { nome, cpf, rg, matricula } = req.body;
+  const { nome, rg, matricula } = req.body;
 
   const alunos = lerAlunos();
-  const cpfLimpo = String(cpf || '').trim();
   const rgLimpo = String(rg || '').trim();
   const matriculaLimpa = String(matricula || '').trim();
-  const cpfNormalizado = normalizarCodigo(cpfLimpo);
   const rgNormalizado = normalizarDocumento(rgLimpo);
 
-  if (!cpfValido(cpfLimpo)) {
-    return res.redirect('/alunos?erro=cpf');
-  }
-
-  if (rgLimpo && !rgValido(rgLimpo)) {
+  if (!rgValido(rgLimpo)) {
     return res.redirect('/alunos?erro=rg');
   }
 
@@ -487,14 +447,6 @@ app.post('/alunos/cadastrar', verificarLogin, (req, res) => {
 
   if (matriculaExiste) {
     return res.redirect('/alunos?erro=matricula');
-  }
-
-  const cpfExiste = alunos.find(
-    aluno => normalizarCodigo(aluno.cpf) === cpfNormalizado
-  );
-
-  if (cpfExiste) {
-    return res.redirect('/alunos?erro=cpf_duplicado');
   }
 
   const rgExiste = rgNormalizado && alunos.find(
@@ -508,7 +460,6 @@ app.post('/alunos/cadastrar', verificarLogin, (req, res) => {
   const novoAluno = {
     id: String(Date.now()),
     nome: String(nome || '').trim(),
-    cpf: cpfLimpo,
     rg: rgLimpo,
     matricula: matriculaLimpa,
     turma: '',
@@ -785,7 +736,7 @@ app.get('/presencas/relatorio', verificarLogin, (req, res) => {
       ...registro,
       nome: registro.nome || alunoEncontrado?.nome || 'Aluno não encontrado',
       matricula: alunoEncontrado?.matricula || '',
-      cpf: alunoEncontrado?.cpf || '',
+      rg: registro.rg || alunoEncontrado?.rg || '',
       turma: alunoEncontrado?.turma || '',
       dataHora: registro.dataHora || ''
     };
@@ -795,7 +746,7 @@ app.get('/presencas/relatorio', verificarLogin, (req, res) => {
     relatorio = relatorio.filter(item =>
       item.nome.toLowerCase().includes(aluno.toLowerCase()) ||
       item.matricula.includes(aluno) ||
-      item.cpf.includes(aluno)
+      String(item.rg || '').toLowerCase().includes(aluno.toLowerCase())
     );
   }
 

@@ -141,7 +141,7 @@
                   <i class="bi bi-search"></i>
                 </span>
                 <input type="search" class="form-control border-0 shadow-none" id="buscaPresenca"
-                  placeholder="Buscar por aluno, matrícula ou CPF" autocomplete="off">
+                  placeholder="Buscar por aluno, matrícula ou RG" autocomplete="off">
               </div>
 
               <input type="date" class="form-control filtro-select" id="filtroDataPresenca">
@@ -160,7 +160,7 @@
                 <tr>
                   <th>Aluno</th>
                   <th>Matrícula</th>
-                  <th>CPF</th>
+                  <th>RG</th>
                   <th>Turma</th>
                   <th>Status</th>
                   <th>Data e Hora</th>
@@ -185,7 +185,7 @@
                           <%= registro.matricula || '-' %>
                         </td>
                         <td>
-                          <%= registro.cpf || '-' %>
+                          <%= registro.rg || '-' %>
                         </td>
                         <td>
                           <%= registro.turma || '-' %>
@@ -215,7 +215,7 @@
               <tr>
                 <th>Aluno</th>
                 <th>Matrícula</th>
-                <th>CPF</th>
+                <th>RG</th>
                 <th>Turma</th>
                 <th>Status</th>
               </tr>
@@ -239,7 +239,7 @@
                         <%= aluno.matricula || '-' %>
                       </td>
                       <td>
-                        <%= aluno.cpf || '-' %>
+                        <%= aluno.rg || '-' %>
                       </td>
                       <td>
                         <%= aluno.turma || '-' %>

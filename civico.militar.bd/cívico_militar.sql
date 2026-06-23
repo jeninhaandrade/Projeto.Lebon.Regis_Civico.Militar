@@ -4,7 +4,6 @@ USE civico_militar;
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    cpf VARCHAR(14) NOT NULL UNIQUE,
     login VARCHAR(50) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL);
 
@@ -12,7 +11,7 @@ CREATE TABLE alunos (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     matricula VARCHAR(10) NOT NULL UNIQUE,
     nome VARCHAR(100) NOT NULL,
-    cpf VARCHAR(14) NOT NULL UNIQUE,	
+    rg VARCHAR(20) NOT NULL UNIQUE,
     data_nascimento DATE,
     nome_pai VARCHAR(100),
     nome_mae VARCHAR(100),
@@ -40,4 +39,3 @@ CREATE TABLE historico_pontuacao (
     REFERENCES alunos(id)
     ON DELETE CASCADE
 );
-      

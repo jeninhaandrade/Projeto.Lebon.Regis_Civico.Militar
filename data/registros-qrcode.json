@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": 1782247993691,
+    "alunoId": "1782247949975",
+    "nome": "dierry gabriel vidal",
+    "matricula": "4556458721",
+    "rg": "16382187909",
+    "turma": "",
+    "status": "presente",
+    "data": "2026-06-23",
+    "dataHora": "23/06/2026, 16:53:13"
+  }
+]
