@@ -60,12 +60,8 @@
 
           <% if (typeof query !== 'undefined' && query.erro) { %>
             <div class="alert alert-danger border-0 shadow-sm rounded-4 mt-3" role="alert">
-              <% if (query.erro === 'cpf') { %>
-                CPF inválido. Confira os números antes de salvar.
-              <% } else if (query.erro === 'rg') { %>
+              <% if (query.erro === 'rg') { %>
                 RG inválido. Informe de 5 a 14 caracteres, usando números e letras.
-              <% } else if (query.erro === 'cpf_duplicado') { %>
-                Já existe um aluno cadastrado com esse CPF.
               <% } else if (query.erro === 'rg_duplicado') { %>
                 Já existe um aluno cadastrado com esse RG.
               <% } else if (query.erro === 'matricula') { %>
@@ -144,7 +140,7 @@
                     type="text"
                     name="busca"
                     class="form-control border-start-0 shadow-none"
-                    placeholder="Buscar aluno por nome, CPF, RG ou matrícula..."
+                    placeholder="Buscar aluno por nome, RG ou matrícula..."
                     value="<%= busca || '' %>"
                   >
 
@@ -197,7 +193,6 @@
                   <thead class="table-light">
                     <tr>
                       <th>Nome</th>
-                      <th>CPF</th>
                       <th>RG</th>
                       <th>Matrícula</th>
                       <th>Status</th>
@@ -212,7 +207,7 @@
                     <% if (alunosAtivos.length === 0) { %>
 
                       <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="5" class="text-center text-muted py-4">
                           Nenhum aluno ativo cadastrado.
                         </td>
                       </tr>
@@ -224,7 +219,6 @@
                       <tr>
 
                         <td><%= aluno.nome %></td>
-                        <td><%= aluno.cpf || '-' %></td>
                         <td><%= aluno.rg || '-' %></td>
                         <td><%= aluno.matricula %></td>
 
@@ -268,7 +262,6 @@
                   <thead class="table-light">
                     <tr>
                       <th>Nome</th>
-                      <th>CPF</th>
                       <th>RG</th>
                       <th>Matrícula</th>
                       <th>Status</th>
@@ -283,7 +276,7 @@
                     <% if (alunosInativos.length === 0) { %>
 
                       <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="5" class="text-center text-muted py-4">
                           Nenhum aluno inativo.
                         </td>
                       </tr>
@@ -295,7 +288,6 @@
                       <tr>
 
                         <td><%= aluno.nome %></td>
-                        <td><%= aluno.cpf || '-' %></td>
                         <td><%= aluno.rg || '-' %></td>
                         <td><%= aluno.matricula %></td>
 
@@ -360,13 +352,8 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label">CPF</label>
-              <input type="text" name="cpf" class="form-control" maxlength="14" required>
-            </div>
-
-            <div class="mb-3">
               <label class="form-label">RG</label>
-              <input type="text" name="rg" class="form-control" maxlength="20">
+              <input type="text" name="rg" class="form-control" maxlength="20" required>
             </div>
 
             <div class="mb-3">
