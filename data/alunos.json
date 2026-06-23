@@ -1,29 +1,3 @@
 [
-  {
-    "id": "1",
-    "nome": "João Silva",
-    "turma": "1º Ano",
-    "ativo": true,
-    "desativadoEm": "10/06/2026, 18:29:33",
-    "reativadoEm": "10/06/2026, 18:29:53"
-  },
-  {
-    "id": "2",
-    "nome": "Maria Souza",
-    "turma": "2º Ano",
-    "ativo": false,
-    "desativadoEm": "10/06/2026, 18:29:34",
-    "reativadoEm": "13/05/2026, 16:51:20"
-  },
-  {
-    "id": "1778705516890",
-    "nome": "joao neves",
-    "cpf": "117.950.350-30",
-    "matricula": "25874",
-    "turma": "",
-    "ativo": false,
-    "criadoEm": "13/05/2026, 16:51:56",
-    "desativadoEm": "10/06/2026, 18:29:35",
-    "reativadoEm": "13/05/2026, 17:46:46"
-  }
+  
 ]

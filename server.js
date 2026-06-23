@@ -14,6 +14,7 @@ app.get('/teste-rota', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 const SALT_ROUNDS = 10;
+const HORARIO_LIMITE_PRESENCA = process.env.HORARIO_LIMITE_PRESENCA || '08:00';
 
 const usersFilePath = path.join(__dirname, 'data', 'users.json');
 const alunosPath = path.join(__dirname, 'data', 'alunos.json');
@@ -114,6 +115,97 @@ function converterDataAdvertencia(data) {
 
   const dataConvertida = new Date(data);
   return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
+}
+
+function dataLocalISO(data = new Date()) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+
+  return `${ano}-${mes}-${dia}`;
+}
+
+function horarioLimiteAtingido(horarioLimite = HORARIO_LIMITE_PRESENCA, agora = new Date()) {
+  const [horas = '0', minutos = '0'] = String(horarioLimite).split(':');
+  const limite = new Date(agora);
+
+  limite.setHours(Number(horas), Number(minutos), 0, 0);
+
+  return agora >= limite;
+}
+
+function normalizarCodigo(valor) {
+  return String(valor || '').replace(/\D/g, '');
+}
+
+function normalizarDocumento(valor) {
+  return String(valor || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+}
+
+function cpfValido(valor) {
+  const cpf = normalizarCodigo(valor);
+
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
+    return false;
+  }
+
+  const calcularDigito = (base, pesoInicial) => {
+    const soma = base
+      .split('')
+      .reduce((total, numero, indice) => total + Number(numero) * (pesoInicial - indice), 0);
+    const resto = (soma * 10) % 11;
+    return resto === 10 ? 0 : resto;
+  };
+
+  return (
+    calcularDigito(cpf.slice(0, 9), 10) === Number(cpf[9]) &&
+    calcularDigito(cpf.slice(0, 10), 11) === Number(cpf[10])
+  );
+}
+
+function rgValido(valor) {
+  const rg = normalizarDocumento(valor);
+  return rg.length >= 5 && rg.length <= 14 && !/^([0X])\1+$/.test(rg);
+}
+
+function codigoContemDocumento(codigoOriginal, documentoNormalizado) {
+  const codigoDocumento = normalizarDocumento(codigoOriginal);
+
+  return (
+    codigoDocumento === documentoNormalizado ||
+    codigoDocumento.includes(documentoNormalizado)
+  );
+}
+
+function codigoCorrespondeIdentificador(valorAluno, codigoOriginal, codigoNormalizado) {
+  const valorOriginal = String(valorAluno || '').trim();
+  const valorNormalizado = normalizarCodigo(valorOriginal);
+
+  if (!valorOriginal) {
+    return false;
+  }
+
+  return (
+    valorOriginal === codigoOriginal ||
+    valorNormalizado === codigoNormalizado ||
+    (valorNormalizado.length >= 4 && codigoNormalizado.includes(valorNormalizado))
+  );
+}
+
+function codigoCorrespondeCpf(valorAluno, codigoOriginal) {
+  if (!cpfValido(valorAluno)) {
+    return false;
+  }
+
+  return codigoContemDocumento(codigoOriginal, normalizarCodigo(valorAluno));
+}
+
+function codigoCorrespondeRg(valorAluno, codigoOriginal) {
+  if (!rgValido(valorAluno)) {
+    return false;
+  }
+
+  return codigoContemDocumento(codigoOriginal, normalizarDocumento(valorAluno));
 }
 
 function verificarLogin(req, res, next) {
@@ -248,6 +340,8 @@ app.get('/leitor-qrcode', (req, res) => {
 
 app.post('/registrar-qrcode', (req, res) => {
   const { codigo } = req.body;
+  const codigoOriginal = String(codigo || '').trim();
+  const codigoNormalizado = normalizarCodigo(codigoOriginal);
 
   if (!codigo) {
     return res.status(400).json({
@@ -259,9 +353,24 @@ app.post('/registrar-qrcode', (req, res) => {
 
   const alunos = lerAlunos();
 
-  const alunoEncontrado = alunos.find(
-    aluno => String(aluno.id) === String(codigo) || aluno.matricula === codigo
-  );
+  const alunosEncontrados = alunos.filter((aluno) => {
+    return (
+      codigoCorrespondeIdentificador(aluno.id, codigoOriginal, codigoNormalizado) ||
+      codigoCorrespondeIdentificador(aluno.matricula, codigoOriginal, codigoNormalizado) ||
+      codigoCorrespondeCpf(aluno.cpf, codigoOriginal) ||
+      codigoCorrespondeRg(aluno.rg, codigoOriginal)
+    );
+  });
+
+  if (alunosEncontrados.length > 1) {
+    return res.status(409).json({
+      sucesso: false,
+      status: 'duplicado',
+      mensagem: 'Mais de um aluno corresponde ao código lido. Confira CPF/RG/matrícula.'
+    });
+  }
+
+  const alunoEncontrado = alunosEncontrados[0];
 
   if (!alunoEncontrado) {
     return res.status(404).json({
@@ -285,10 +394,12 @@ app.post('/registrar-qrcode', (req, res) => {
     id: Date.now(),
     alunoId: alunoEncontrado.id,
     nome: alunoEncontrado.nome,
+    matricula: alunoEncontrado.matricula || '',
+    cpf: alunoEncontrado.cpf || '',
+    rg: alunoEncontrado.rg || '',
     turma: alunoEncontrado.turma || '',
-    status: 'concluido',
     status: 'presente',
-
+    data: dataLocalISO(),
     dataHora: new Date().toLocaleString('pt-BR')
   };
 
@@ -297,7 +408,6 @@ app.post('/registrar-qrcode', (req, res) => {
 
   return res.json({
     sucesso: true,
-    status: 'concluido',
     status: 'presente',
     mensagem: 'Entrada registrada com sucesso.',
     registro: novoRegistro
@@ -321,11 +431,13 @@ app.get('/alunos', verificarLogin, (req, res) => {
     alunos = alunos.filter(aluno => {
       const nome = aluno.nome || '';
       const cpf = aluno.cpf || '';
+      const rg = aluno.rg || '';
       const matricula = aluno.matricula || '';
 
       return (
         nome.toLowerCase().includes(busca.toLowerCase()) ||
         cpf.includes(busca) ||
+        rg.toLowerCase().includes(busca.toLowerCase()) ||
         matricula.toLowerCase().includes(busca.toLowerCase())
       );
     });
@@ -345,29 +457,60 @@ app.get('/alunos', verificarLogin, (req, res) => {
     usuario: req.session.usuario,
     alunos,
     busca,
-    ordem
+    ordem,
+    query: req.query
   });
 });
 
 
 app.post('/alunos/cadastrar', verificarLogin, (req, res) => {
-  const { nome, cpf, matricula } = req.body;
+  const { nome, cpf, rg, matricula } = req.body;
 
   const alunos = lerAlunos();
+  const cpfLimpo = String(cpf || '').trim();
+  const rgLimpo = String(rg || '').trim();
+  const matriculaLimpa = String(matricula || '').trim();
+  const cpfNormalizado = normalizarCodigo(cpfLimpo);
+  const rgNormalizado = normalizarDocumento(rgLimpo);
+
+  if (!cpfValido(cpfLimpo)) {
+    return res.redirect('/alunos?erro=cpf');
+  }
+
+  if (rgLimpo && !rgValido(rgLimpo)) {
+    return res.redirect('/alunos?erro=rg');
+  }
 
   const matriculaExiste = alunos.find(
-    aluno => aluno.matricula === matricula
+    aluno => String(aluno.matricula || '').trim() === matriculaLimpa
   );
 
   if (matriculaExiste) {
     return res.redirect('/alunos?erro=matricula');
   }
 
+  const cpfExiste = alunos.find(
+    aluno => normalizarCodigo(aluno.cpf) === cpfNormalizado
+  );
+
+  if (cpfExiste) {
+    return res.redirect('/alunos?erro=cpf_duplicado');
+  }
+
+  const rgExiste = rgNormalizado && alunos.find(
+    aluno => normalizarDocumento(aluno.rg) === rgNormalizado
+  );
+
+  if (rgExiste) {
+    return res.redirect('/alunos?erro=rg_duplicado');
+  }
+
   const novoAluno = {
     id: String(Date.now()),
-    nome,
-    cpf,
-    matricula,
+    nome: String(nome || '').trim(),
+    cpf: cpfLimpo,
+    rg: rgLimpo,
+    matricula: matriculaLimpa,
     turma: '',
     ativo: true,
     criadoEm: new Date().toLocaleString('pt-BR')
@@ -570,6 +713,8 @@ app.get('/presencas', verificarLogin, (req, res) => {
   const registros = lerJSON(registrosPath);
 
   const hoje = new Date().toLocaleDateString('pt-BR');
+  const hojeISO = dataLocalISO();
+  const leituraEncerrada = horarioLimiteAtingido();
 
 
   const alunosAtivos = alunos.filter(
@@ -578,8 +723,8 @@ app.get('/presencas', verificarLogin, (req, res) => {
 
   const presentesHoje = registros.filter(
     registro =>
-      registro.dataHora &&
-      registro.dataHora.startsWith(hoje)
+      registro.data === hojeISO ||
+      (registro.dataHora && registro.dataHora.startsWith(hoje))
   );
 
   const idsPresentesHoje = presentesHoje.map(
@@ -589,6 +734,8 @@ app.get('/presencas', verificarLogin, (req, res) => {
   const faltantesHoje = alunosAtivos.filter(
     aluno => !idsPresentesHoje.includes(String(aluno.id))
   );
+  const alunosAguardandoLeitura = leituraEncerrada ? [] : faltantesHoje;
+  const alunosFaltantesHoje = leituraEncerrada ? faltantesHoje : [];
 
   res.render('presencas', {
     titulo: 'Presenças',
@@ -599,10 +746,14 @@ app.get('/presencas', verificarLogin, (req, res) => {
 
     totalAlunos: alunosAtivos.length,
     totalPresentesHoje: presentesHoje.length,
-    totalFaltantesHoje: faltantesHoje.length,
+    totalFaltantesHoje: alunosFaltantesHoje.length,
+    totalAguardandoLeitura: alunosAguardandoLeitura.length,
+    leituraEncerrada,
+    horarioLimitePresenca: HORARIO_LIMITE_PRESENCA,
 
     registros: registros.reverse(),
-    faltantesHoje
+    faltantesHoje: alunosFaltantesHoje,
+    alunosAguardandoLeitura
   });
 });
 

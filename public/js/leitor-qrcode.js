@@ -26,10 +26,15 @@ async function registrarQRCode(codigo) {
     if (dados.sucesso) {
       mudarStatus("✅ " + dados.registro.nome + " - Entrada registrada", "sucesso");
     } else {
-      mudarStatus("❌ " + dados.mensagem, "erro");
+      const codigoLido = String(codigo || '').slice(0, 80);
+      const detalhe = dados.status === 'nao_encontrado' && codigoLido
+        ? " Código lido: " + codigoLido
+        : "";
+
+      mudarStatus(dados.mensagem + detalhe, "erro");
     }
   } catch (error) {
-    mudarStatus("❌ Erro ao conectar com o servidor", "erro");
+    mudarStatus("Erro ao conectar com o servidor", "erro");
   }
 
   setTimeout(() => {
