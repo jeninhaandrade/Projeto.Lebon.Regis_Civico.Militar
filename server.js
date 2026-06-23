@@ -425,12 +425,33 @@ app.get('/pontuacoes', verificarLogin, (req, res) => {
   });
 });
 
+let ocorrencias = [];
+
 app.get('/ocorrencias', verificarLogin, (req, res) => {
   res.render('ocorrencias', {
     titulo: 'Ocorrências',
     activePage: 'ocorrencias',
-    usuario: req.session.usuario
+    usuario: req.session.usuario,
+    ocorrencias
   });
+});
+
+
+// Salvar ocorrência
+app.post('/ocorrencias', (req, res) => {
+  const { nomeAluno, tipo, descricao } = req.body;
+
+  const novaOcorrencia = {
+    id: Date.now(),
+    nomeAluno,
+    tipo,
+    descricao,
+    data: new Date().toLocaleDateString('pt-BR')
+  };
+
+  ocorrencias.push(novaOcorrencia);
+
+  res.redirect('/ocorrencias');
 });
 
 // 1. Listagem de Advertências (Atualizada para ler os dados reais)
@@ -584,6 +605,7 @@ app.get('/presencas', verificarLogin, (req, res) => {
     faltantesHoje
   });
 });
+
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
