@@ -36,15 +36,20 @@
   <main class="main-content p-4">
     <div class="container-fluid">
 
-      <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
         <div>
           <h1 class="h3 mb-1">Advertências</h1>
           <p class="text-muted mb-0">Registro e acompanhamento de advertências dos alunos.</p>
         </div>
 
-        <a href="/advertencias/relatorio" class="btn btn-danger align-self-lg-start">
-          <i class="bi bi-file-earmark-text me-2"></i>Gerar Relatório
-        </a>
+        <div class="d-flex gap-2 align-self-lg-start">
+          <a href="/advertencias/nova" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Cadastrar Advertência
+          </a>
+          <a href="/advertencias/relatorio" class="btn btn-danger">
+            <i class="bi bi-file-earmark-text me-2"></i>Gerar Relatório
+          </a>
+        </div>
       </div>
 
       <div class="card border-0 shadow-sm rounded-4">
@@ -53,7 +58,34 @@
         </div>
 
         <div class="card-body">
-          <p class="text-muted mb-0">Nenhuma advertência registrada ainda.</p>
+          <% if (typeof advertencias !== 'undefined' && advertencias && advertencias.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Aluno</th>
+                    <th>Turma</th>
+                    <th>Motivo</th>
+                    <th>Responsável</th>
+                    <th>Data / Hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% advertencias.forEach(adv => { %>
+                    <tr>
+                      <td class="fw-semibold"><%= adv.nomeAluno %></td>
+                      <td><span class="badge bg-secondary text-wrap"><%= adv.turma || 'Não informada' %></span></td>
+                      <td class="text-wrap" style="max-width: 300px;"><%= adv.motivo %></td>
+                      <td><%= adv.responsavel %></td>
+                      <td class="text-muted"><%= adv.data %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="text-muted mb-0">Nenhuma advertência registrada ainda.</p>
+          <% } %>
         </div>
       </div>
 
