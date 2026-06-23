@@ -17,7 +17,7 @@ const SALT_ROUNDS = 10;
 
 const usersFilePath = path.join(__dirname, 'data', 'users.json');
 const alunosPath = path.join(__dirname, 'data', 'alunos.json');
-const registrosPath = path.join(__dirname,'data', 'registros-qrcode.json');
+const registrosPath = path.join(__dirname, 'data', 'registros-qrcode.json');
 const pontuacoesPath = path.join(__dirname, 'data', 'pontuacoes.json');
 const advertenciasPath = path.join(__dirname, 'data', 'advertencias.json');
 
@@ -571,7 +571,7 @@ app.get('/presencas', verificarLogin, (req, res) => {
 
   const hoje = new Date().toLocaleDateString('pt-BR');
 
-  
+
   const alunosAtivos = alunos.filter(
     aluno => aluno.ativo !== false
   );
@@ -585,7 +585,7 @@ app.get('/presencas', verificarLogin, (req, res) => {
   const idsPresentesHoje = presentesHoje.map(
     registro => String(registro.alunoId)
   );
-  
+
   const faltantesHoje = alunosAtivos.filter(
     aluno => !idsPresentesHoje.includes(String(aluno.id))
   );
@@ -603,6 +603,91 @@ app.get('/presencas', verificarLogin, (req, res) => {
 
     registros: registros.reverse(),
     faltantesHoje
+  });
+});
+
+app.get('/presencas/relatorio', verificarLogin, (req, res) => {
+  const { aluno, dataInicio, dataFim, quantidadeFaltas } = req.query;
+  const alunos = lerAlunos();
+  const registros = lerJSON(registrosPath);
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  const alunosAtivos = alunos.filter(aluno => aluno.ativo !== false);
+
+  const faltasPorAluno = alunosAtivos.map(aluno => {
+    const presencasAluno = registros.filter(
+      registro =>
+        String(registro.alunoId) === String(aluno.id)
+    );
+
+    return {
+      ...aluno,
+      quantidadeFaltas: presencasAluno.length === 0 ? 1 : 0
+    };
+  });
+
+  let relatorio = registros.map(registro => {
+    const alunoEncontrado = alunos.find(a => String(a.id) === String(registro.alunoId));
+
+    return {
+      ...registro,
+      nome: registro.nome || alunoEncontrado?.nome || 'Aluno não encontrado',
+      matricula: alunoEncontrado?.matricula || '',
+      cpf: alunoEncontrado?.cpf || '',
+      turma: alunoEncontrado?.turma || '',
+      dataHora: registro.dataHora || ''
+    };
+  });
+
+  if (aluno) {
+    relatorio = relatorio.filter(item =>
+      item.nome.toLowerCase().includes(aluno.toLowerCase()) ||
+      item.matricula.includes(aluno) ||
+      item.cpf.includes(aluno)
+    );
+  }
+
+  if (dataInicio) {
+    relatorio = relatorio.filter(item => {
+      const dataRegistro = item.dataHora.split(',')[0];
+      const [dia, mes, ano] = dataRegistro.split('/');
+      return new Date(`${ano}-${mes}-${dia}`) >= new Date(`${dataInicio}T00:00:00`);
+    });
+  }
+
+  if (dataFim) {
+    relatorio = relatorio.filter(item => {
+      const dataRegistro = item.dataHora.split(',')[0];
+      const [dia, mes, ano] = dataRegistro.split('/');
+      return new Date(`${ano}-${mes}-${dia}`) <= new Date(`${dataFim}T23:59:59`);
+    });
+  }
+
+  if (quantidadeFaltas) {
+    relatorio = relatorio.filter(item => {
+      const alunoFalta = faltasPorAluno.find(
+        aluno => String(aluno.id) === String(item.alunoId)
+      );
+
+      return (
+        alunoFalta &&
+        alunoFalta.quantidadeFaltas >= Number(quantidadeFaltas)
+      );
+    });
+  }
+
+  res.render('relatorio_presencas', {
+    titulo: 'Relatório de Presenças',
+    activePage: 'presencas',
+    usuario: req.session.usuario,
+    relatorio,
+    filtros: {
+      aluno: aluno || '',
+      dataInicio: dataInicio || '',
+      dataFim: dataFim || ''
+    },
+    dataEmissao: new Date().toLocaleString('pt-BR')
   });
 });
 
