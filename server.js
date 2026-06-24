@@ -28,15 +28,6 @@ const PORT = process.env.PORT || 3000;
 const SALT_ROUNDS = 10;
 const HORARIO_LIMITE_PRESENCA = process.env.HORARIO_LIMITE_PRESENCA || '08:00';
 
-<<<<<<< HEAD
-const usersFilePath = path.join(__dirname, 'data', 'users.json');
-const alunosPath = path.join(__dirname, 'data', 'alunos.json');
-const registrosPath = path.join(__dirname, 'data', 'registros-qrcode.json');
-const pontuacoesPath = path.join(__dirname, 'data', 'pontuacoes.json');
-const advertenciasPath = path.join(__dirname, 'data', 'advertencias.json');
-
-=======
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -59,144 +50,6 @@ app.use(
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-<<<<<<< HEAD
-function lerJSON(caminho) {
-  try {
-    if (!fs.existsSync(caminho)) {
-      fs.writeFileSync(caminho, '[]', 'utf8');
-    }
-
-    const dados = fs.readFileSync(caminho, 'utf8');
-    return JSON.parse(dados);
-  } catch (error) {
-    console.error('Erro ao ler JSON:', error);
-    return [];
-  }
-}
-
-function salvarJSON(caminho, dados) {
-  try {
-    fs.writeFileSync(caminho, JSON.stringify(dados, null, 2), 'utf8');
-  } catch (error) {
-    console.error('Erro ao salvar JSON:', error);
-  }
-}
-
-function lerUsuarios() {
-  return lerJSON(usersFilePath);
-}
-
-function salvarUsuarios(usuarios) {
-  salvarJSON(usersFilePath, usuarios);
-}
-
-function senhaEstaComHash(senha) {
-  return typeof senha === 'string' && senha.startsWith('$2');
-}
-
-function lerAlunos() {
-  return lerJSON(alunosPath);
-}
-
-function salvarAlunos(alunos) {
-  salvarJSON(alunosPath, alunos);
-}
-
-function obterDataAdvertencia(advertencia) {
-  return advertencia.data || advertencia.dataHora || advertencia.criadoEm || '';
-}
-
-function converterDataFiltro(data) {
-  if (!data) {
-    return null;
-  }
-
-  const dataConvertida = new Date(`${data}T00:00:00`);
-  return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
-}
-
-function converterDataAdvertencia(data) {
-  if (!data) {
-    return null;
-  }
-
-  const [dataParte] = String(data).split(/[,\s]/);
-  const partes = dataParte.split('/');
-
-  if (partes.length === 3) {
-    const [dia, mes, ano] = partes;
-    const dataConvertida = new Date(`${ano}-${mes}-${dia}T00:00:00`);
-    return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
-  }
-
-  const dataConvertida = new Date(data);
-  return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
-}
-
-function dataLocalISO(data = new Date()) {
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const dia = String(data.getDate()).padStart(2, '0');
-
-  return `${ano}-${mes}-${dia}`;
-}
-
-function horarioLimiteAtingido(horarioLimite = HORARIO_LIMITE_PRESENCA, agora = new Date()) {
-  const [horas = '0', minutos = '0'] = String(horarioLimite).split(':');
-  const limite = new Date(agora);
-
-  limite.setHours(Number(horas), Number(minutos), 0, 0);
-
-  return agora >= limite;
-}
-
-function normalizarCodigo(valor) {
-  return String(valor || '').replace(/\D/g, '');
-}
-
-function normalizarDocumento(valor) {
-  return String(valor || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
-}
-
-function rgValido(valor) {
-  const rg = normalizarDocumento(valor);
-  return rg.length >= 5 && rg.length <= 14 && !/^([0X])\1+$/.test(rg);
-}
-
-function codigoContemDocumento(codigoOriginal, documentoNormalizado) {
-  const codigoDocumento = normalizarDocumento(codigoOriginal);
-
-  return (
-    codigoDocumento === documentoNormalizado ||
-    codigoDocumento.includes(documentoNormalizado)
-  );
-}
-
-function codigoCorrespondeIdentificador(valorAluno, codigoOriginal, codigoNormalizado) {
-  const valorOriginal = String(valorAluno || '').trim();
-  const valorNormalizado = normalizarCodigo(valorOriginal);
-
-  if (!valorOriginal) {
-    return false;
-  }
-
-  return (
-    valorOriginal === codigoOriginal ||
-    valorNormalizado === codigoNormalizado ||
-    (valorNormalizado.length >= 4 && codigoNormalizado.includes(valorNormalizado))
-  );
-}
-
-function codigoCorrespondeRg(valorAluno, codigoOriginal) {
-  if (!rgValido(valorAluno)) {
-    return false;
-  }
-
-  return codigoContemDocumento(codigoOriginal, normalizarDocumento(valorAluno));
-}
-
-=======
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
 function verificarLogin(req, res, next) {
   if (req.session.usuario) {
     return next();
@@ -252,32 +105,6 @@ app.get('/cadastro', (req, res) => {
 });
 
 app.post('/cadastro', async (req, res) => {
-<<<<<<< HEAD
-  const { nome, usuario, senha } = req.body;
-  const usuarios = lerUsuarios();
-
-  const loginExistente = usuarios.find(
-    item => item.login === usuario
-  );
-
-  if (loginExistente) {
-    return res.render('cadastro', {
-      titulo: 'Cadastro',
-      mensagem: 'Usuário já cadastrado.'
-    });
-  }
-
-  const novoUsuario = {
-    nome,
-    login: usuario,
-    password: await bcrypt.hash(senha, SALT_ROUNDS)
-  };
-
-  usuarios.push(novoUsuario);
-  salvarUsuarios(usuarios);
-
-  return res.redirect('/login');
-=======
   const { nome, cpf, usuario, senha } = req.body;
   try {
     const [usuariosExistentes] = await db.query(
@@ -297,7 +124,6 @@ app.post('/cadastro', async (req, res) => {
     console.error('Erro ao cadastrar usuário no banco:', error);
     return res.render('cadastro', { titulo: 'Cadastro', mensagem: 'Erro interno do servidor ao realizar o cadastro.' });
   }
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
 });
 
 app.get('/dashboard', verificarLogin, async (req, res) => {
@@ -322,107 +148,6 @@ app.get('/leitor-qrcode', (req, res) => {
   res.render('leitor-qrcode', { titulo: 'Leitor QR Code' });
 });
 
-<<<<<<< HEAD
-
-app.post('/registrar-qrcode', (req, res) => {
-  const { codigo } = req.body;
-  const codigoOriginal = String(codigo || '').trim();
-  const codigoNormalizado = normalizarCodigo(codigoOriginal);
-
-  if (!codigo) {
-    return res.status(400).json({
-      sucesso: false,
-      status: 'erro',
-      mensagem: 'Código do QR Code não enviado.'
-    });
-  }
-
-  const alunos = lerAlunos();
-
-  const alunosEncontrados = alunos.filter((aluno) => {
-    return (
-      codigoCorrespondeIdentificador(aluno.id, codigoOriginal, codigoNormalizado) ||
-      codigoCorrespondeIdentificador(aluno.matricula, codigoOriginal, codigoNormalizado) ||
-      codigoCorrespondeRg(aluno.rg, codigoOriginal)
-    );
-  });
-
-  if (alunosEncontrados.length > 1) {
-    return res.status(409).json({
-      sucesso: false,
-      status: 'duplicado',
-      mensagem: 'Mais de um aluno corresponde ao código lido. Confira RG/matrícula.'
-    });
-  }
-
-  const alunoEncontrado = alunosEncontrados[0];
-
-  if (!alunoEncontrado) {
-    return res.status(404).json({
-      sucesso: false,
-      status: 'nao_encontrado',
-      mensagem: 'Aluno não encontrado.'
-    });
-  }
-
-  if (alunoEncontrado.ativo === false) {
-    return res.status(403).json({
-      sucesso: false,
-      status: 'inativo',
-      mensagem: 'Aluno inativo. Entrada não permitida.'
-    });
-  }
-
-  const registros = lerJSON(registrosPath);
-
-  const novoRegistro = {
-    id: Date.now(),
-    alunoId: alunoEncontrado.id,
-    nome: alunoEncontrado.nome,
-    matricula: alunoEncontrado.matricula || '',
-    rg: alunoEncontrado.rg || '',
-    turma: alunoEncontrado.turma || '',
-    status: 'presente',
-    data: dataLocalISO(),
-    dataHora: new Date().toLocaleString('pt-BR')
-  };
-
-  registros.push(novoRegistro);
-  salvarJSON(registrosPath, registros);
-
-  return res.json({
-    sucesso: true,
-    status: 'presente',
-    mensagem: 'Entrada registrada com sucesso.',
-    registro: novoRegistro
-  });
-});
-
-
-app.get('/registros-qrcode', verificarLogin, (req, res) => {
-  const registros = lerJSON(registrosPath);
-  return res.json(registros);
-});
-
-
-app.get('/alunos', verificarLogin, (req, res) => {
-  const busca = req.query.busca || '';
-  const ordem = req.query.ordem || '';
-
-  let alunos = lerAlunos();
-
-  if (busca) {
-    alunos = alunos.filter(aluno => {
-      const nome = aluno.nome || '';
-      const rg = aluno.rg || '';
-      const matricula = aluno.matricula || '';
-
-      return (
-        nome.toLowerCase().includes(busca.toLowerCase()) ||
-        rg.toLowerCase().includes(busca.toLowerCase()) ||
-        matricula.toLowerCase().includes(busca.toLowerCase())
-      );
-=======
 app.get('/alunos', verificarLogin, async (req, res) => {
   const busca = req.query.busca || '';
   const ordem = req.query.ordem || '';
@@ -451,77 +176,11 @@ app.get('/alunos', verificarLogin, async (req, res) => {
       alunos: alunosFormatados,
       busca,
       ordem
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
     });
   } catch (error) {
     console.error('Erro ao buscar alunos no banco:', error);
     res.status(500).send('Erro interno ao carregar a listagem de alunos.');
   }
-<<<<<<< HEAD
-
-  if (ordem === 'az') {
-    alunos.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-  }
-
-  if (ordem === 'za') {
-    alunos.sort((a, b) => (b.nome || '').localeCompare(a.nome || ''));
-  }
-
-  res.render('register_alunos', {
-    titulo: 'Alunos',
-    activePage: 'alunos',
-    usuario: req.session.usuario,
-    alunos,
-    busca,
-    ordem,
-    query: req.query
-  });
-});
-
-
-app.post('/alunos/cadastrar', verificarLogin, (req, res) => {
-  const { nome, rg, matricula } = req.body;
-
-  const alunos = lerAlunos();
-  const rgLimpo = String(rg || '').trim();
-  const matriculaLimpa = String(matricula || '').trim();
-  const rgNormalizado = normalizarDocumento(rgLimpo);
-
-  if (!rgValido(rgLimpo)) {
-    return res.redirect('/alunos?erro=rg');
-  }
-
-  const matriculaExiste = alunos.find(
-    aluno => String(aluno.matricula || '').trim() === matriculaLimpa
-  );
-
-  if (matriculaExiste) {
-    return res.redirect('/alunos?erro=matricula');
-  }
-
-  const rgExiste = rgNormalizado && alunos.find(
-    aluno => normalizarDocumento(aluno.rg) === rgNormalizado
-  );
-
-  if (rgExiste) {
-    return res.redirect('/alunos?erro=rg_duplicado');
-  }
-
-  const novoAluno = {
-    id: String(Date.now()),
-    nome: String(nome || '').trim(),
-    rg: rgLimpo,
-    matricula: matriculaLimpa,
-    turma: '',
-    ativo: true,
-    criadoEm: new Date().toLocaleString('pt-BR')
-  };
-
-  alunos.push(novoAluno);
-  salvarAlunos(alunos);
-
-  return res.redirect('/alunos');
-=======
 });
 
 app.post('/alunos/cadastrar', verificarLogin, async (req, res) => {
@@ -541,7 +200,6 @@ app.post('/alunos/cadastrar', verificarLogin, async (req, res) => {
     console.error('Erro ao cadastrar aluno no banco:', error);
     return res.redirect('/alunos?erro=servidor');
   }
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
 });
 
 app.post('/alunos/:id/desativar', verificarLogin, async (req, res) => {
@@ -568,62 +226,6 @@ app.post('/alunos/:id/ativar', verificarLogin, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-
-app.get('/pontuacoes', verificarLogin, (req, res) => {
-  const alunos = lerAlunos();
-  const pontuacoes = lerJSON(pontuacoesPath);
-
-  res.render('pontuacao', {
-    titulo: 'Controle de Pontuação',
-    activePage: 'pontuacoes',
-    usuario: req.session.usuario,
-    alunos,
-    pontuacoes
-  });
-});
-
-let ocorrencias = [];
-
-app.get('/ocorrencias', verificarLogin, (req, res) => {
-  res.render('ocorrencias', {
-    titulo: 'Ocorrências',
-    activePage: 'ocorrencias',
-    usuario: req.session.usuario,
-    ocorrencias
-  });
-});
-
-
-// Salvar ocorrência
-app.post('/ocorrencias', (req, res) => {
-  const { nomeAluno, tipo, descricao } = req.body;
-
-  const novaOcorrencia = {
-    id: Date.now(),
-    nomeAluno,
-    tipo,
-    descricao,
-    data: new Date().toLocaleDateString('pt-BR')
-  };
-
-  ocorrencias.push(novaOcorrencia);
-
-  res.redirect('/ocorrencias');
-});
-
-// 1. Listagem de Advertências (Atualizada para ler os dados reais)
-app.get('/advertencias', verificarLogin, (req, res) => {
-  const advertencias = lerJSON(advertenciasPath);
-  const alunos = lerAlunos();
-
-  const listaAdvertencias = advertencias.map(adv => {
-    const alunoEncontrado = alunos.find(a => String(a.id) === String(adv.alunoId));
-    return {
-      ...adv,
-      nomeAluno: alunoEncontrado ? alunoEncontrado.nome : 'Aluno não encontrado',
-      turma: alunoEncontrado ? alunoEncontrado.turma : ''
-=======
 app.post('/registrar-qrcode', async (req, res) => {
   const { codigo } = req.body;
   if (!codigo) {
@@ -650,7 +252,6 @@ app.post('/registrar-qrcode', async (req, res) => {
       turma: alunoEncontrado.turma || '',
       status: 'presente',
       dataHora: dataHoraAtual
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
     };
     return res.json({ sucesso: true, status: 'presente', mensagem: 'Entrada registrada com sucesso.', registro: novoRegistro });
   } catch (error) {
@@ -809,51 +410,6 @@ app.get('/advertencias/relatorio', verificarLogin, async (req, res) => {
     querySQL += ' ORDER BY adv.id DESC';
     const [advertencias] = await db.query(querySQL, parametros);
 
-<<<<<<< HEAD
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  const hojeISO = dataLocalISO();
-  const leituraEncerrada = horarioLimiteAtingido();
-
-
-  const alunosAtivos = alunos.filter(
-    aluno => aluno.ativo !== false
-  );
-
-  const presentesHoje = registros.filter(
-    registro =>
-      registro.data === hojeISO ||
-      (registro.dataHora && registro.dataHora.startsWith(hoje))
-  );
-
-  const idsPresentesHoje = presentesHoje.map(
-    registro => String(registro.alunoId)
-  );
-
-  const faltantesHoje = alunosAtivos.filter(
-    aluno => !idsPresentesHoje.includes(String(aluno.id))
-  );
-  const alunosAguardandoLeitura = leituraEncerrada ? [] : faltantesHoje;
-  const alunosFaltantesHoje = leituraEncerrada ? faltantesHoje : [];
-
-  res.render('presencas', {
-    titulo: 'Presenças',
-    activePage: 'presencas',
-    usuario: req.session.usuario,
-
-    totalPresencas: registros.length,
-
-    totalAlunos: alunosAtivos.length,
-    totalPresentesHoje: presentesHoje.length,
-    totalFaltantesHoje: alunosFaltantesHoje.length,
-    totalAguardandoLeitura: alunosAguardandoLeitura.length,
-    leituraEncerrada,
-    horarioLimitePresenca: HORARIO_LIMITE_PRESENCA,
-
-    registros: registros.reverse(),
-    faltantesHoje: alunosFaltantesHoje,
-    alunosAguardandoLeitura
-  });
-=======
     res.render('relatorio_advertencias', {
       titulo: 'Relatório de Advertências',
       activePage: 'advertencias',
@@ -871,7 +427,6 @@ app.get('/advertencias/relatorio', verificarLogin, async (req, res) => {
 
 app.get('/ocorrencias', verificarLogin, (req, res) => {
   res.render('ocorrencias', { titulo: 'Ocorrências', activePage: 'ocorrencias', usuario: req.session.usuario });
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
 });
 
 app.get('/presencas/relatorio', verificarLogin, (req, res) => {
