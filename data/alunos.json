@@ -5,7 +5,23 @@
     "rg": "16382187909",
     "matricula": "4556458721",
     "turma": "",
+<<<<<<< HEAD
     "ativo": true,
     "criadoEm": "23/06/2026, 16:52:29"
+=======
+    "ativo": false,
+    "criadoEm": "13/05/2026, 16:51:56",
+    "desativadoEm": "10/06/2026, 18:29:35",
+    "reativadoEm": "13/05/2026, 17:46:46"
+  },
+  {
+    "id": "1782246782906",
+    "nome": "testebd",
+    "cpf": "666.777.888-99",
+    "matricula": "333333",
+    "turma": "",
+    "ativo": true,
+    "criadoEm": "23/06/2026, 17:33:02"
+>>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
   }
 ]
