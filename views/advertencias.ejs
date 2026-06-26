@@ -43,13 +43,8 @@
         </div>
 
         <div class="d-flex gap-2 align-self-lg-start">
-<<<<<<< HEAD
-          <a href="/advertencias/nova" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-2"></i>Cadastrar Advertência
-=======
           <a href="/advertencias/nova" class="btn btn-dark">
             <i class="bi bi-plus-lg me-2"></i>Nova Advertência
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
           </a>
           <a href="/advertencias/relatorio" class="btn btn-danger">
             <i class="bi bi-file-earmark-text me-2"></i>Gerar Relatório
@@ -63,38 +58,8 @@
         </div>
 
         <div class="card-body">
-<<<<<<< HEAD
-          <% if (typeof advertencias !== 'undefined' && advertencias && advertencias.length > 0) { %>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Aluno</th>
-                    <th>Turma</th>
-                    <th>Motivo</th>
-                    <th>Responsável</th>
-                    <th>Data / Hora</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% advertencias.forEach(adv => { %>
-                    <tr>
-                      <td class="fw-semibold"><%= adv.nomeAluno %></td>
-                      <td><span class="badge bg-secondary text-wrap"><%= adv.turma || 'Não informada' %></span></td>
-                      <td class="text-wrap" style="max-width: 300px;"><%= adv.motivo %></td>
-                      <td><%= adv.responsavel %></td>
-                      <td class="text-muted"><%= adv.data %></td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          <% } else { %>
-            <p class="text-muted mb-0">Nenhuma advertência registrada ainda.</p>
-          <% } %>
-=======
           <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
                   <th>Data / Hora</th>
@@ -105,25 +70,30 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (typeof advertencias !== 'undefined' && advertencias.length > 0) { %>
+                <% if (typeof advertencias !== 'undefined' && advertencias && advertencias.length > 0) { %>
                   <% advertencias.forEach(adv => { %>
                     <tr>
-                      <td class="text-nowrap"><%= adv.dataHora %></td>
-                      <td><strong><%= adv.nomeAluno %></strong></td>
-                      <td><%= adv.turma || '---' %></td>
-                      <td><%= adv.motivo %></td>
+                      <td class="text-nowrap text-muted"><%= adv.dataHora || adv.data || '---' %></td>
+                      <td class="fw-semibold"><%= adv.nomeAluno %></td>
+                      <td>
+                        <span class="badge bg-secondary text-wrap">
+                          <%= adv.turma || 'Não informada' %>
+                        </span>
+                      </td>
+                      <td class="text-wrap" style="max-width: 300px;"><%= adv.motivo %></td>
                       <td><i class="bi bi-person me-1"></i><%= adv.responsavel %></td>
                     </tr>
                   <% }) %>
                 <% } else { %>
                   <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Nenhuma advertência registrada ainda.</td>
+                    <td colspan="5" class="text-center text-muted py-4">
+                      Nenhuma advertência registrada ainda.
+                    </td>
                   </tr>
                 <% } %>
               </tbody>
             </table>
           </div>
->>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
         </div>
       </div>
 
