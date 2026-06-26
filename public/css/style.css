@@ -38,6 +38,37 @@ body {
   text-decoration: underline;
 }
 
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper .form-control {
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #4f6480;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover,
+.password-toggle:focus {
+  color: #0a7a00;
+  background: rgba(10, 122, 0, 0.08);
+  outline: none;
+}
+
 /* Cadastro */
 .form-cadastro input {
   padding: 16px 18px;
@@ -48,6 +79,12 @@ body {
   padding: 16px;
   border-radius: 16px;
   font-size: 18px;
+}
+
+.form-cadastro .password-toggle {
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
 }
 
 /* Mobile */
