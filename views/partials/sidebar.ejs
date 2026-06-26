@@ -3,46 +3,47 @@
   const classeMenu = (pagina) => `nav-link ${itemAtivo === pagina ? 'active' : 'text-white'}`;
 %>
 
-<ul class="nav nav-pills flex-column gap-2">
+<ul class="nav nav-pills flex-column gap-2 sidebar-menu">
+  <span class="sidebar-menu-indicator" aria-hidden="true"></span>
 
   <li>
-    <a href="/dashboard" class="<%= classeMenu('dashboard') %>">
+    <a href="/dashboard" class="<%= classeMenu('dashboard') %>" data-sidebar-item>
       <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
     </a>
   </li>
 
   <li>
-    <a href="/alunos" class="<%= classeMenu('alunos') %>">
+    <a href="/alunos" class="<%= classeMenu('alunos') %>" data-sidebar-item>
       <i class="bi bi-people me-2"></i><span>Registros de Alunos</span>
     </a>
   </li>
 
   <li>
-    <a href="/presencas" class="<%= classeMenu('presencas') %>">
+    <a href="/presencas" class="<%= classeMenu('presencas') %>" data-sidebar-item>
       <i class="bi bi-check2-square me-2"></i><span>Presenças</span>
     </a>
   </li>
 
   <li>
-    <a href="/ocorrencias" class="<%= classeMenu('ocorrencias') %>">
+    <a href="/ocorrencias" class="<%= classeMenu('ocorrencias') %>" data-sidebar-item>
       <i class="bi bi-exclamation-triangle me-2"></i><span>Ocorrências</span>
     </a>
   </li>
 
   <li>
-    <a href="/advertencias" class="<%= classeMenu('advertencias') %>">
+    <a href="/advertencias" class="<%= classeMenu('advertencias') %>" data-sidebar-item>
       <i class="bi bi-exclamation-octagon me-2"></i><span>Advertências</span>
     </a>
   </li>
 
   <li>
-    <a href="/pontuacoes" class="<%= classeMenu('pontuacoes') %>">
+    <a href="/pontuacoes" class="<%= classeMenu('pontuacoes') %>" data-sidebar-item>
       <i class="bi bi-star me-2"></i><span>Pontuação</span>
     </a>
   </li>
 
   <li>
-    <a href="/leitor-qrcode" target="_blank" class="nav-link text-white">
+    <a href="/leitor-qrcode" target="_blank" class="nav-link text-white" data-sidebar-item>
       <i class="bi bi-qr-code-scan me-2"></i><span>Leitor QR Code</span>
     </a>
   </li>
