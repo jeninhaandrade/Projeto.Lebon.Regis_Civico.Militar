@@ -5,6 +5,18 @@ const path = require('path');
 const session = require('express-session');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const db = require('./db'); 
+
+async function testarConexao() {
+    try {
+        const [linhas] = await db.query('SELECT 1 + 1 AS resultado');
+        console.log('--- BANCO DE DADOS CONECTADO COM SUCESSO (XAMPP) ---');
+    } catch (error) {
+        console.error('--- ERRO AO CONECTAR NO BANCO DE DADOS ---');
+        console.error(error.message);
+    }
+}
+testarConexao();
 
 const app = express();
 
@@ -15,12 +27,6 @@ app.get('/teste-rota', (req, res) => {
 const PORT = process.env.PORT || 3000;
 const SALT_ROUNDS = 10;
 const HORARIO_LIMITE_PRESENCA = process.env.HORARIO_LIMITE_PRESENCA || '08:00';
-
-const usersFilePath = path.join(__dirname, 'data', 'users.json');
-const alunosPath = path.join(__dirname, 'data', 'alunos.json');
-const registrosPath = path.join(__dirname, 'data', 'registros-qrcode.json');
-const pontuacoesPath = path.join(__dirname, 'data', 'pontuacoes.json');
-const advertenciasPath = path.join(__dirname, 'data', 'advertencias.json');
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -44,155 +50,17 @@ app.use(
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-function lerJSON(caminho) {
-  try {
-    if (!fs.existsSync(caminho)) {
-      fs.writeFileSync(caminho, '[]', 'utf8');
-    }
-
-    const dados = fs.readFileSync(caminho, 'utf8');
-    return JSON.parse(dados);
-  } catch (error) {
-    console.error('Erro ao ler JSON:', error);
-    return [];
-  }
-}
-
-function salvarJSON(caminho, dados) {
-  try {
-    fs.writeFileSync(caminho, JSON.stringify(dados, null, 2), 'utf8');
-  } catch (error) {
-    console.error('Erro ao salvar JSON:', error);
-  }
-}
-
-function lerUsuarios() {
-  return lerJSON(usersFilePath);
-}
-
-function salvarUsuarios(usuarios) {
-  salvarJSON(usersFilePath, usuarios);
-}
-
-function senhaEstaComHash(senha) {
-  return typeof senha === 'string' && senha.startsWith('$2');
-}
-
-function lerAlunos() {
-  return lerJSON(alunosPath);
-}
-
-function salvarAlunos(alunos) {
-  salvarJSON(alunosPath, alunos);
-}
-
-function obterDataAdvertencia(advertencia) {
-  return advertencia.data || advertencia.dataHora || advertencia.criadoEm || '';
-}
-
-function converterDataFiltro(data) {
-  if (!data) {
-    return null;
-  }
-
-  const dataConvertida = new Date(`${data}T00:00:00`);
-  return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
-}
-
-function converterDataAdvertencia(data) {
-  if (!data) {
-    return null;
-  }
-
-  const [dataParte] = String(data).split(/[,\s]/);
-  const partes = dataParte.split('/');
-
-  if (partes.length === 3) {
-    const [dia, mes, ano] = partes;
-    const dataConvertida = new Date(`${ano}-${mes}-${dia}T00:00:00`);
-    return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
-  }
-
-  const dataConvertida = new Date(data);
-  return Number.isNaN(dataConvertida.getTime()) ? null : dataConvertida;
-}
-
-function dataLocalISO(data = new Date()) {
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const dia = String(data.getDate()).padStart(2, '0');
-
-  return `${ano}-${mes}-${dia}`;
-}
-
-function horarioLimiteAtingido(horarioLimite = HORARIO_LIMITE_PRESENCA, agora = new Date()) {
-  const [horas = '0', minutos = '0'] = String(horarioLimite).split(':');
-  const limite = new Date(agora);
-
-  limite.setHours(Number(horas), Number(minutos), 0, 0);
-
-  return agora >= limite;
-}
-
-function normalizarCodigo(valor) {
-  return String(valor || '').replace(/\D/g, '');
-}
-
-function normalizarDocumento(valor) {
-  return String(valor || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
-}
-
-function rgValido(valor) {
-  const rg = normalizarDocumento(valor);
-  return rg.length >= 5 && rg.length <= 14 && !/^([0X])\1+$/.test(rg);
-}
-
-function codigoContemDocumento(codigoOriginal, documentoNormalizado) {
-  const codigoDocumento = normalizarDocumento(codigoOriginal);
-
-  return (
-    codigoDocumento === documentoNormalizado ||
-    codigoDocumento.includes(documentoNormalizado)
-  );
-}
-
-function codigoCorrespondeIdentificador(valorAluno, codigoOriginal, codigoNormalizado) {
-  const valorOriginal = String(valorAluno || '').trim();
-  const valorNormalizado = normalizarCodigo(valorOriginal);
-
-  if (!valorOriginal) {
-    return false;
-  }
-
-  return (
-    valorOriginal === codigoOriginal ||
-    valorNormalizado === codigoNormalizado ||
-    (valorNormalizado.length >= 4 && codigoNormalizado.includes(valorNormalizado))
-  );
-}
-
-function codigoCorrespondeRg(valorAluno, codigoOriginal) {
-  if (!rgValido(valorAluno)) {
-    return false;
-  }
-
-  return codigoContemDocumento(codigoOriginal, normalizarDocumento(valorAluno));
-}
-
 function verificarLogin(req, res, next) {
   if (req.session.usuario) {
     return next();
   }
-
   return res.redirect('/login');
 }
-
 
 app.get('/', (req, res) => {
   if (req.session.usuario) {
     return res.redirect('/dashboard');
   }
-
   return res.redirect('/login');
 });
 
@@ -200,512 +68,365 @@ app.get('/login', (req, res) => {
   if (req.session.usuario) {
     return res.redirect('/dashboard');
   }
-
-  res.render('login', {
-    titulo: 'Login',
-    erro: null
-  });
+  res.render('login', { titulo: 'Login', erro: null });
 });
 
 app.post('/login', async (req, res) => {
   const { login, password } = req.body;
-  const usuarios = lerUsuarios();
-
-  const usuarioEncontrado = usuarios.find(usuario => usuario.login === login);
-  let senhaValida = false;
-
-  if (usuarioEncontrado) {
-    if (senhaEstaComHash(usuarioEncontrado.password)) {
-      senhaValida = await bcrypt.compare(password, usuarioEncontrado.password);
-    } else {
-      senhaValida = usuarioEncontrado.password === password;
-
-      if (senhaValida) {
-        usuarioEncontrado.password = await bcrypt.hash(password, SALT_ROUNDS);
-        salvarUsuarios(usuarios);
-      }
+  try {
+    const [linhas] = await db.query('SELECT * FROM usuarios WHERE login = ?', [login]);
+    if (linhas.length === 0) {
+      return res.render('login', { titulo: 'Login', erro: 'Login ou senha inválidos' });
     }
-  }
-
-  if (!usuarioEncontrado || !senhaValida) {
-    return res.render('login', {
-      titulo: 'Login',
-      erro: 'Login ou senha inválidos'
+    const usuarioEncontrado = lines[0] || linhas[0];
+    const senhaValida = await bcrypt.compare(password, usuarioEncontrado.senha);
+    if (!senhaValida) {
+      return res.render('login', { titulo: 'Login', erro: 'Login ou senha inválidos' });
+    }
+    req.session.usuario = {
+      id: usuarioEncontrado.id,
+      login: usuarioEncontrado.login,
+      nome: usuarioEncontrado.nome
+    };
+    req.session.save(() => {
+      return res.redirect('/dashboard');
     });
+  } catch (error) {
+    console.error('Erro ao realizar login no banco:', error);
+    return res.render('login', { titulo: 'Login', erro: 'Erro interno do servidor ao processar o login.' });
   }
-
-  req.session.usuario = {
-    login: usuarioEncontrado.login,
-    nome: usuarioEncontrado.nome
-  };
-
-  req.session.save(() => {
-    return res.redirect('/dashboard');
-  });
 });
 
-//user
 app.get('/cadastro', (req, res) => {
   if (req.session.usuario) {
     return res.redirect('/dashboard');
   }
-
-  res.render('cadastro', {
-    titulo: 'Cadastro',
-    mensagem: null
-  });
+  res.render('cadastro', { titulo: 'Cadastro', mensagem: null });
 });
 
 app.post('/cadastro', async (req, res) => {
-  const { nome, usuario, senha } = req.body;
-  const usuarios = lerUsuarios();
-
-  const loginExistente = usuarios.find(
-    item => item.login === usuario
-  );
-
-  if (loginExistente) {
-    return res.render('cadastro', {
-      titulo: 'Cadastro',
-      mensagem: 'Usuário já cadastrado.'
-    });
+  const { nome, cpf, usuario, senha } = req.body;
+  try {
+    const [usuariosExistentes] = await db.query(
+      'SELECT id FROM usuarios WHERE login = ? OR cpf = ?',
+      [usuario, cpf]
+    );
+    if (usuariosExistentes.length > 0) {
+      return res.render('cadastro', { titulo: 'Cadastro', mensagem: 'Usuário ou CPF já cadastrado.' });
+    }
+    const senhaCriptografada = await bcrypt.hash(senha, SALT_ROUNDS);
+    await db.query(
+      'INSERT INTO usuarios (nome, cpf, login, senha) VALUES (?, ?, ?, ?)',
+      [nome, cpf, usuario, senhaCriptografada]
+    );
+    return res.redirect('/login');
+  } catch (error) {
+    console.error('Erro ao cadastrar usuário no banco:', error);
+    return res.render('cadastro', { titulo: 'Cadastro', mensagem: 'Erro interno do servidor ao realizar o cadastro.' });
   }
-
-  const novoUsuario = {
-    nome,
-    login: usuario,
-    password: await bcrypt.hash(senha, SALT_ROUNDS)
-  };
-
-  usuarios.push(novoUsuario);
-  salvarUsuarios(usuarios);
-
-  return res.redirect('/login');
 });
 
-
-app.get('/dashboard', verificarLogin, (req, res) => {
-  const alunos = lerAlunos();
-  const registros = lerJSON(registrosPath);
-
-  const alunosAtivos = alunos.filter(aluno => aluno.ativo !== false);
-
-  res.render('dashboard', {
-    titulo: 'Dashboard',
-    activePage: 'dashboard',
-    usuario: req.session.usuario,
-    totalAlunos: alunosAtivos.length,
-    totalPresencas: registros.length,
-    registros: registros.reverse()
-  });
+app.get('/dashboard', verificarLogin, async (req, res) => {
+  try {
+    const [alunos] = await db.query('SELECT id FROM alunos WHERE ativo = 1');
+    const [registros] = await db.query('SELECT * FROM registros_qrcode ORDER BY id DESC');
+    res.render('dashboard', {
+      titulo: 'Dashboard',
+      activePage: 'dashboard',
+      usuario: req.session.usuario,
+      totalAlunos: alunos.length,
+      totalPresencas: registros.length,
+      registros: registros
+    });
+  } catch (error) {
+    console.error('Erro no dashboard:', error);
+    res.status(500).send('Erro ao carregar o Dashboard.');
+  }
 });
-
 
 app.get('/leitor-qrcode', (req, res) => {
-  res.render('leitor-qrcode', {
-    titulo: 'Leitor QR Code'
-  });
+  res.render('leitor-qrcode', { titulo: 'Leitor QR Code' });
 });
 
-
-app.post('/registrar-qrcode', (req, res) => {
-  const { codigo } = req.body;
-  const codigoOriginal = String(codigo || '').trim();
-  const codigoNormalizado = normalizarCodigo(codigoOriginal);
-
-  if (!codigo) {
-    return res.status(400).json({
-      sucesso: false,
-      status: 'erro',
-      mensagem: 'Código do QR Code não enviado.'
-    });
-  }
-
-  const alunos = lerAlunos();
-
-  const alunosEncontrados = alunos.filter((aluno) => {
-    return (
-      codigoCorrespondeIdentificador(aluno.id, codigoOriginal, codigoNormalizado) ||
-      codigoCorrespondeIdentificador(aluno.matricula, codigoOriginal, codigoNormalizado) ||
-      codigoCorrespondeRg(aluno.rg, codigoOriginal)
-    );
-  });
-
-  if (alunosEncontrados.length > 1) {
-    return res.status(409).json({
-      sucesso: false,
-      status: 'duplicado',
-      mensagem: 'Mais de um aluno corresponde ao código lido. Confira RG/matrícula.'
-    });
-  }
-
-  const alunoEncontrado = alunosEncontrados[0];
-
-  if (!alunoEncontrado) {
-    return res.status(404).json({
-      sucesso: false,
-      status: 'nao_encontrado',
-      mensagem: 'Aluno não encontrado.'
-    });
-  }
-
-  if (alunoEncontrado.ativo === false) {
-    return res.status(403).json({
-      sucesso: false,
-      status: 'inativo',
-      mensagem: 'Aluno inativo. Entrada não permitida.'
-    });
-  }
-
-  const registros = lerJSON(registrosPath);
-
-  const novoRegistro = {
-    id: Date.now(),
-    alunoId: alunoEncontrado.id,
-    nome: alunoEncontrado.nome,
-    matricula: alunoEncontrado.matricula || '',
-    rg: alunoEncontrado.rg || '',
-    turma: alunoEncontrado.turma || '',
-    status: 'presente',
-    data: dataLocalISO(),
-    dataHora: new Date().toLocaleString('pt-BR')
-  };
-
-  registros.push(novoRegistro);
-  salvarJSON(registrosPath, registros);
-
-  return res.json({
-    sucesso: true,
-    status: 'presente',
-    mensagem: 'Entrada registrada com sucesso.',
-    registro: novoRegistro
-  });
-});
-
-
-app.get('/registros-qrcode', verificarLogin, (req, res) => {
-  const registros = lerJSON(registrosPath);
-  return res.json(registros);
-});
-
-
-app.get('/alunos', verificarLogin, (req, res) => {
+app.get('/alunos', verificarLogin, async (req, res) => {
   const busca = req.query.busca || '';
   const ordem = req.query.ordem || '';
-
-  let alunos = lerAlunos();
-
-  if (busca) {
-    alunos = alunos.filter(aluno => {
-      const nome = aluno.nome || '';
-      const rg = aluno.rg || '';
-      const matricula = aluno.matricula || '';
-
-      return (
-        nome.toLowerCase().includes(busca.toLowerCase()) ||
-        rg.toLowerCase().includes(busca.toLowerCase()) ||
-        matricula.toLowerCase().includes(busca.toLowerCase())
-      );
+  try {
+    let querySQL = 'SELECT * FROM alunos WHERE 1=1';
+    let parametros = [];
+    if (busca) {
+      querySQL += ' AND (nome LIKE ? OR cpf LIKE ? OR matricula LIKE ?)';
+      const termoBusca = `%${busca}%`;
+      parametros.push(termoBusca, termoBusca, termoBusca);
+    }
+    if (ordem === 'az') {
+      querySQL += ' ORDER BY nome ASC';
+    } else if (ordem === 'za') {
+      querySQL += ' ORDER BY nome DESC';
+    }
+    const [alunos] = await db.query(querySQL, parametros);
+    const alunosFormatados = alunos.map(aluno => ({
+      ...aluno,
+      ativo: aluno.ativo === 1
+    }));
+    res.render('register_alunos', {
+      titulo: 'Alunos',
+      activePage: 'alunos',
+      usuario: req.session.usuario,
+      alunos: alunosFormatados,
+      busca,
+      ordem
     });
+  } catch (error) {
+    console.error('Erro ao buscar alunos no banco:', error);
+    res.status(500).send('Erro interno ao carregar a listagem de alunos.');
   }
-
-  if (ordem === 'az') {
-    alunos.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-  }
-
-  if (ordem === 'za') {
-    alunos.sort((a, b) => (b.nome || '').localeCompare(a.nome || ''));
-  }
-
-  res.render('register_alunos', {
-    titulo: 'Alunos',
-    activePage: 'alunos',
-    usuario: req.session.usuario,
-    alunos,
-    busca,
-    ordem,
-    query: req.query
-  });
 });
 
-
-app.post('/alunos/cadastrar', verificarLogin, (req, res) => {
-  const { nome, rg, matricula } = req.body;
-
-  const alunos = lerAlunos();
-  const rgLimpo = String(rg || '').trim();
-  const matriculaLimpa = String(matricula || '').trim();
-  const rgNormalizado = normalizarDocumento(rgLimpo);
-
-  if (!rgValido(rgLimpo)) {
-    return res.redirect('/alunos?erro=rg');
+app.post('/alunos/cadastrar', verificarLogin, async (req, res) => {
+  const { nome, cpf, matricula } = req.body;
+  try {
+    const [matriculaExiste] = await db.query('SELECT id FROM alunos WHERE matricula = ?', [matricula]);
+    if (matriculaExiste.length > 0) {
+      return res.redirect('/alunos?erro=matricula');
+    }
+    const criadoEm = new Date().toLocaleString('pt-BR');
+    await db.query(
+      'INSERT INTO alunos (nome, cpf, matricula, turma, ativo, criadoEm) VALUES (?, ?, ?, ?, 1, ?)',
+      [nome, cpf, matricula, '', criadoEm]
+    );
+    return res.redirect('/alunos');
+  } catch (error) {
+    console.error('Erro ao cadastrar aluno no banco:', error);
+    return res.redirect('/alunos?erro=servidor');
   }
-
-  const matriculaExiste = alunos.find(
-    aluno => String(aluno.matricula || '').trim() === matriculaLimpa
-  );
-
-  if (matriculaExiste) {
-    return res.redirect('/alunos?erro=matricula');
-  }
-
-  const rgExiste = rgNormalizado && alunos.find(
-    aluno => normalizarDocumento(aluno.rg) === rgNormalizado
-  );
-
-  if (rgExiste) {
-    return res.redirect('/alunos?erro=rg_duplicado');
-  }
-
-  const novoAluno = {
-    id: String(Date.now()),
-    nome: String(nome || '').trim(),
-    rg: rgLimpo,
-    matricula: matriculaLimpa,
-    turma: '',
-    ativo: true,
-    criadoEm: new Date().toLocaleString('pt-BR')
-  };
-
-  alunos.push(novoAluno);
-  salvarAlunos(alunos);
-
-  return res.redirect('/alunos');
 });
 
-
-app.post('/alunos/:id/desativar', verificarLogin, (req, res) => {
+app.post('/alunos/:id/desativar', verificarLogin, async (req, res) => {
   const { id } = req.params;
-  const alunos = lerAlunos();
-
-  const aluno = alunos.find(aluno => String(aluno.id) === String(id));
-
-  if (aluno) {
-    aluno.ativo = false;
-    aluno.desativadoEm = new Date().toLocaleString('pt-BR');
+  const desativadoEm = new Date().toLocaleString('pt-BR');
+  try {
+    await db.query('UPDATE alunos SET ativo = 0, desativadoEm = ? WHERE id = ?', [desativadoEm, id]);
+    return res.redirect('/alunos');
+  } catch (error) {
+    console.error('Erro ao desativar aluno:', error);
+    return res.redirect('/alunos?erro=status');
   }
-
-  salvarAlunos(alunos);
-  return res.redirect('/alunos');
 });
 
-
-app.post('/alunos/:id/ativar', verificarLogin, (req, res) => {
+app.post('/alunos/:id/ativar', verificarLogin, async (req, res) => {
   const { id } = req.params;
-  const alunos = lerAlunos();
-
-  const aluno = alunos.find(aluno => String(aluno.id) === String(id));
-
-  if (aluno) {
-    aluno.ativo = true;
-    aluno.reativadoEm = new Date().toLocaleString('pt-BR');
+  const reativadoEm = new Date().toLocaleString('pt-BR');
+  try {
+    await db.query('UPDATE alunos SET ativo = 1, reativadoEm = ? WHERE id = ?', [reativadoEm, id]);
+    return res.redirect('/alunos');
+  } catch (error) {
+    console.error('Erro ao ativar aluno:', error);
+    return res.redirect('/alunos?erro=status');
   }
-
-  salvarAlunos(alunos);
-  return res.redirect('/alunos');
 });
 
-
-app.get('/pontuacoes', verificarLogin, (req, res) => {
-  const alunos = lerAlunos();
-  const pontuacoes = lerJSON(pontuacoesPath);
-
-  res.render('pontuacao', {
-    titulo: 'Controle de Pontuação',
-    activePage: 'pontuacoes',
-    usuario: req.session.usuario,
-    alunos,
-    pontuacoes
-  });
-});
-
-let ocorrencias = [];
-
-app.get('/ocorrencias', verificarLogin, (req, res) => {
-  res.render('ocorrencias', {
-    titulo: 'Ocorrências',
-    activePage: 'ocorrencias',
-    usuario: req.session.usuario,
-    ocorrencias
-  });
-});
-
-
-// Salvar ocorrência
-app.post('/ocorrencias', (req, res) => {
-  const { nomeAluno, tipo, descricao } = req.body;
-
-  const novaOcorrencia = {
-    id: Date.now(),
-    nomeAluno,
-    tipo,
-    descricao,
-    data: new Date().toLocaleDateString('pt-BR')
-  };
-
-  ocorrencias.push(novaOcorrencia);
-
-  res.redirect('/ocorrencias');
-});
-
-// 1. Listagem de Advertências (Atualizada para ler os dados reais)
-app.get('/advertencias', verificarLogin, (req, res) => {
-  const advertencias = lerJSON(advertenciasPath);
-  const alunos = lerAlunos();
-
-  const listaAdvertencias = advertencias.map(adv => {
-    const alunoEncontrado = alunos.find(a => String(a.id) === String(adv.alunoId));
-    return {
-      ...adv,
-      nomeAluno: alunoEncontrado ? alunoEncontrado.nome : 'Aluno não encontrado',
-      turma: alunoEncontrado ? alunoEncontrado.turma : ''
+app.post('/registrar-qrcode', async (req, res) => {
+  const { codigo } = req.body;
+  if (!codigo) {
+    return res.status(400).json({ sucesso: false, message: 'Código do QR Code não enviado.' });
+  }
+  try {
+    const [alunos] = await db.query('SELECT * FROM alunos WHERE id = ? OR matricula = ?', [codigo, codigo]);
+    if (alunos.length === 0) {
+      return res.status(404).json({ sucesso: false, status: 'nao_encontrado', mensagem: 'Aluno não encontrado.' });
+    }
+    const alunoEncontrado = alunos[0];
+    if (alunoEncontrado.ativo === 0) {
+      return res.status(403).json({ sucesso: false, status: 'inativo', mensagem: 'Aluno inativo. Entrada não permitida.' });
+    }
+    const dataHoraAtual = new Date().toLocaleString('pt-BR');
+    const [resultado] = await db.query(
+      'INSERT INTO registros_qrcode (alunoId, nome, turma, status, dataHora) VALUES (?, ?, ?, "presente", ?)',
+      [alunoEncontrado.id, alunoEncontrado.nome, alunoEncontrado.turma || '', dataHoraAtual]
+    );
+    const novoRegistro = {
+      id: resultado.insertId,
+      alunoId: alunoEncontrado.id,
+      nome: alunoEncontrado.nome,
+      turma: alunoEncontrado.turma || '',
+      status: 'presente',
+      dataHora: dataHoraAtual
     };
-  }).reverse();
-
-  res.render('advertencias', {
-    titulo: 'Advertências',
-    activePage: 'advertencias',
-    usuario: req.session.usuario,
-    advertencias: listaAdvertencias
-  });
+    return res.json({ sucesso: true, status: 'presente', mensagem: 'Entrada registrada com sucesso.', registro: novoRegistro });
+  } catch (error) {
+    console.error('Erro ao registrar QR Code no banco:', error);
+    return res.status(500).json({ sucesso: false, mensagem: 'Erro interno do servidor ao registrar presença.' });
+  }
 });
 
-// 2. Tela do Formulário de Cadastro de Advertência
-app.get('/advertencias/nova', verificarLogin, (req, res) => {
-  const alunos = lerAlunos();
-  const alunosAtivos = alunos.filter(aluno => aluno.ativo !== false);
-
-  res.render('cadastro-advertencia', {
-    titulo: 'Cadastrar Advertência',
-    activePage: 'advertencias',
-    usuario: req.session.usuario,
-    alunos: alunosAtivos
-  });
+app.get('/registros-qrcode', verificarLogin, async (req, res) => {
+  try {
+    const [registros] = await db.query('SELECT * FROM registros_qrcode ORDER BY id DESC');
+    return res.json(registros);
+  } catch (error) {
+    console.error('Erro ao buscar registros:', error);
+    return res.status(500).json([]);
+  }
 });
 
-// 3. Processamento do Formulário (Salvar no JSON)
-app.post('/advertencias/salvar', verificarLogin, (req, res) => {
+app.get('/presencas', verificarLogin, async (req, res) => {
+  try {
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    const [alunosAtivos] = await db.query('SELECT * FROM alunos WHERE ativo = 1');
+    const [todosRegistros] = await db.query('SELECT * FROM registros_qrcode ORDER BY id DESC');
+    const presentesHoje = todosRegistros.filter(reg => reg.dataHora && reg.dataHora.startsWith(hoje));
+    const idsPresentesHoje = presentesHoje.map(reg => String(reg.alunoId));
+    const faltantesHoje = alunosAtivos.filter(aluno => !idsPresentesHoje.includes(String(aluno.id)));
+
+    res.render('presencas', {
+      titulo: 'Presenças',
+      activePage: 'presencas',
+      usuario: req.session.usuario,
+      totalPresencas: todosRegistros.length,
+      totalAlunos: alunosAtivos.length,
+      totalPresentesHoje: presentesHoje.length,
+      totalFaltantesHoje: faltantesHoje.length,
+      registros: todosRegistros,
+      faltantesHoje
+    });
+  } catch (error) {
+    console.error('Erro ao carregar tela de presenças:', error);
+    res.status(500).send('Erro interno ao carregar a página de presenças.');
+  }
+});
+
+app.get('/pontuacoes', verificarLogin, async (req, res) => {
+  try {
+    const [alunos] = await db.query('SELECT id, nome, turma FROM alunos WHERE ativo = 1 ORDER BY nome ASC');
+    const [pontuacoes] = await db.query(`
+      SELECT p.*, a.nome AS nomeAluno, a.turma 
+      FROM pontuacoes p
+      INNER JOIN alunos a ON p.alunoId = a.id
+      ORDER BY p.id DESC
+    `);
+    res.render('pontuacao', {
+      titulo: 'Controle de Pontuação',
+      activePage: 'pontuacoes',
+      usuario: req.session.usuario,
+      alunos,
+      pontuacoes
+    });
+  } catch (error) {
+    console.error('Erro ao carregar pontuacoes:', error);
+    res.status(500).send('Erro interno ao carregar a página de pontuacoes.');
+  }
+});
+
+app.post('/pontuacoes/salvar', verificarLogin, async (req, res) => {
+  const { alunoId, pontos, motivo, tipo } = req.body;
+  if (!alunoId || !pontos || !motivo || !tipo) {
+    return res.redirect('/pontuacoes?erro=campos_obrigatorios');
+  }
+  try {
+    const dataHoraAtual = new Date().toLocaleString('pt-BR');
+    const responsavel = req.session.usuario.nome || req.session.usuario.login;
+    await db.query(
+      'INSERT INTO pontuacoes (alunoId, pontos, motivo, tipo, responsavel, dataHora) VALUES (?, ?, ?, ?, ?, ?)',
+      [alunoId, pontos, motivo, tipo, responsavel, dataHoraAtual]
+    );
+    return res.redirect('/pontuacoes');
+  } catch (error) {
+    console.error('Erro ao salvar pontuação no banco:', error);
+    return res.redirect('/pontuacoes?erro=servidor');
+  }
+});
+
+app.get('/advertencias', verificarLogin, async (req, res) => {
+  try {
+    const [advertencias] = await db.query(`
+      SELECT adv.*, a.nome AS nomeAluno, a.turma 
+      FROM advertencias adv
+      INNER JOIN alunos a ON adv.alunoId = a.id
+      ORDER BY adv.id DESC
+    `);
+    res.render('advertencias', {
+      titulo: 'Advertências',
+      activePage: 'advertencias',
+      usuario: req.session.usuario,
+      advertencias
+    });
+  } catch (error) {
+    console.error('Erro ao carregar advertências:', error);
+    res.status(500).send('Erro interno ao carregar a página de advertências.');
+  }
+});
+
+app.get('/advertencias/nova', verificarLogin, async (req, res) => {
+  try {
+    const [alunos] = await db.query('SELECT id, nome, turma FROM alunos WHERE ativo = 1 ORDER BY nome ASC');
+    res.render('cadastro-advertencia', { 
+      titulo: 'Cadastrar Advertência', 
+      activePage: 'advertencias', 
+      usuario: req.session.usuario, 
+      alunos 
+    });
+  } catch (error) {
+    console.error('Erro ao abrir tela de nova advertência:', error);
+    res.status(500).send('Erro ao abrir a tela de cadastro.');
+  }
+});
+
+app.post('/advertencias/salvar', verificarLogin, async (req, res) => {
   const { alunoId, motivo } = req.body;
-
   if (!alunoId || !motivo) {
     return res.redirect('/advertencias/nova?erro=campos_obrigatorios');
   }
+  try {
+    const dataHoraAtual = new Date().toLocaleString('pt-BR');
+    const responsavel = req.session.usuario.nome || req.session.usuario.login;
 
-  const advertencias = lerJSON(advertenciasPath);
-
-  const novaAdvertencia = {
-    id: String(Date.now()),
-    alunoId: alunoId,
-    motivo: motivo,
-    responsavel: req.session.usuario.nome || req.session.usuario.login,
-    data: new Date().toLocaleString('pt-BR')
-  };
-
-  advertencias.push(novaAdvertencia);
-  salvarJSON(advertenciasPath, advertencias);
-
-  return res.redirect('/advertencias');
-});
-
-app.get('/advertencias/relatorio', verificarLogin, (req, res) => {
-  const { aluno, dataInicio, dataFim } = req.query;
-  const alunos = lerAlunos();
-  const advertencias = lerJSON(advertenciasPath);
-  const inicio = converterDataFiltro(dataInicio);
-  const fim = converterDataFiltro(dataFim);
-
-  if (fim) {
-    fim.setHours(23, 59, 59, 999);
+    await db.query(
+      'INSERT INTO advertencias (alunoId, motivo, responsavel, dataHora) VALUES (?, ?, ?, ?)',
+      [alunoId, motivo, responsavel, dataHoraAtual]
+    );
+    return res.redirect('/advertencias');
+  } catch (error) {
+    console.error('Erro ao salvar advertência no banco:', error);
+    return res.redirect('/advertencias/nova?erro=servidor');
   }
-
-  const advertenciasFormatadas = advertencias
-    .map(advertencia => {
-      const alunoReferencia = advertencia.alunoId || advertencia.idAluno || advertencia.aluno_id || advertencia.aluno;
-      const alunoEncontrado = alunos.find(item =>
-        String(item.id) === String(alunoReferencia) || item.nome === advertencia.aluno
-      );
-
-      return {
-        ...advertencia,
-        alunoId: alunoEncontrado?.id || alunoReferencia,
-        data: obterDataAdvertencia(advertencia),
-        nomeAluno: advertencia.nomeAluno || advertencia.aluno || alunoEncontrado?.nome || 'Aluno não informado',
-        turma: advertencia.turma || alunoEncontrado?.turma || '',
-        motivo: advertencia.motivo || advertencia.descricao || advertencia.observacao || '',
-        responsavel: advertencia.responsavel || advertencia.professor || advertencia.usuario || ''
-      };
-    })
-    .filter(advertencia => {
-      const dataAdvertencia = converterDataAdvertencia(advertencia.data);
-      const alunoCorresponde = !aluno || String(advertencia.alunoId) === String(aluno);
-      const inicioCorresponde = !inicio || (dataAdvertencia && dataAdvertencia >= inicio);
-      const fimCorresponde = !fim || (dataAdvertencia && dataAdvertencia <= fim);
-
-      return alunoCorresponde && inicioCorresponde && fimCorresponde;
-    });
-
-  res.render('relatorio_advertencias', {
-    titulo: 'Relatório de Advertências',
-    activePage: 'advertencias',
-    usuario: req.session.usuario,
-    alunos,
-    advertencias: advertenciasFormatadas,
-    filtros: {
-      aluno: aluno || '',
-      dataInicio: dataInicio || '',
-      dataFim: dataFim || ''
-    },
-    dataEmissao: new Date().toLocaleString('pt-BR')
-  });
 });
 
-app.get('/presencas', verificarLogin, (req, res) => {
-  const alunos = lerAlunos();
-  const registros = lerJSON(registrosPath);
+app.get('/advertencias/relatorio', verificarLogin, async (req, res) => {
+  const { aluno, dataInicio, dataFim } = req.query;
+  try {
+    const [alunos] = await db.query('SELECT id, nome FROM alunos ORDER BY nome ASC');
+    let querySQL = `
+      SELECT adv.*, a.nome AS nomeAluno, a.turma 
+      FROM advertencias adv
+      INNER JOIN alunos a ON adv.alunoId = a.id
+      WHERE 1=1
+    `;
+    let parametros = [];
+    if (aluno) {
+      querySQL += ' AND adv.alunoId = ?';
+      parametros.push(aluno);
+    }
+    querySQL += ' ORDER BY adv.id DESC';
+    const [advertencias] = await db.query(querySQL, parametros);
 
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  const hojeISO = dataLocalISO();
-  const leituraEncerrada = horarioLimiteAtingido();
+    res.render('relatorio_advertencias', {
+      titulo: 'Relatório de Advertências',
+      activePage: 'advertencias',
+      usuario: req.session.usuario,
+      alunos,
+      advertencias,
+      filtros: { aluno: aluno || '', dataInicio: dataInicio || '', dataFim: dataFim || '' },
+      dataEmissao: new Date().toLocaleString('pt-BR')
+    });
+  } catch (error) {
+    console.error('Erro ao gerar relatório de advertências:', error);
+    res.status(500).send('Erro ao processar o relatório.');
+  }
+});
 
-
-  const alunosAtivos = alunos.filter(
-    aluno => aluno.ativo !== false
-  );
-
-  const presentesHoje = registros.filter(
-    registro =>
-      registro.data === hojeISO ||
-      (registro.dataHora && registro.dataHora.startsWith(hoje))
-  );
-
-  const idsPresentesHoje = presentesHoje.map(
-    registro => String(registro.alunoId)
-  );
-
-  const faltantesHoje = alunosAtivos.filter(
-    aluno => !idsPresentesHoje.includes(String(aluno.id))
-  );
-  const alunosAguardandoLeitura = leituraEncerrada ? [] : faltantesHoje;
-  const alunosFaltantesHoje = leituraEncerrada ? faltantesHoje : [];
-
-  res.render('presencas', {
-    titulo: 'Presenças',
-    activePage: 'presencas',
-    usuario: req.session.usuario,
-
-    totalPresencas: registros.length,
-
-    totalAlunos: alunosAtivos.length,
-    totalPresentesHoje: presentesHoje.length,
-    totalFaltantesHoje: alunosFaltantesHoje.length,
-    totalAguardandoLeitura: alunosAguardandoLeitura.length,
-    leituraEncerrada,
-    horarioLimitePresenca: HORARIO_LIMITE_PRESENCA,
-
-    registros: registros.reverse(),
-    faltantesHoje: alunosFaltantesHoje,
-    alunosAguardandoLeitura
-  });
+app.get('/ocorrencias', verificarLogin, (req, res) => {
+  res.render('ocorrencias', { titulo: 'Ocorrências', activePage: 'ocorrencias', usuario: req.session.usuario });
 });
 
 app.get('/presencas/relatorio', verificarLogin, (req, res) => {

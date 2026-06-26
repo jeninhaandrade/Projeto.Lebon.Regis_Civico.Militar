@@ -45,8 +45,8 @@
         <div class="col-12 col-md-6 col-xl-3">
           <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body">
-              <p class="text-muted mb-1">Alunos</p>
-              <h3 class="mb-0">28</h3>
+              <p class="text-muted mb-1">Alunos Ativos</p>
+              <h3 class="mb-0"><%= alunos.length %></h3>
             </div>
           </div>
         </div>
@@ -85,37 +85,46 @@
         </div>
 
         <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Aluno</label>
-              <select class="form-select">
-                <option>Selecione um aluno</option>
-              </select>
+          <form action="/pontuacoes/salvar" method="POST" id="formPontuacao">
+            <div class="row g-3">
+              
+              <div class="col-md-6">
+                <label class="form-label" for="alunoBusca">Aluno</label>
+                <input list="listaAlunos" id="alunoBusca" class="form-control" placeholder="Digite para pesquisar o aluno..." required>
+                <input type="hidden" name="alunoId" id="alunoId">
+                
+                <datalist id="listaAlunos">
+                  <% if (typeof alunos !== 'undefined' && alunos.length > 0) { %>
+                    <% alunos.forEach(aluno => { %>
+                      <option data-id="<%= aluno.id %>" value="<%= aluno.nome %> (<%= aluno.turma || 'Sem Turma' %>)"></option>
+                    <% }) %>
+                  <% } %>
+                </datalist>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="tipo">Tipo</label>
+                <select name="tipo" id="tipo" class="form-select" required>
+                  <option value="adicionar">Adicionar</option>
+                  <option value="remover">Remover</option>
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="pontos">Pontos</label>
+                <input type="number" name="pontos" id="pontos" class="form-control" min="1" required placeholder="Ex: 10">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="motivo">Observação / Motivo</label>
+                <textarea name="motivo" id="motivo" class="form-control" rows="3" placeholder="Informe o motivo da alteração..." required></textarea>
+              </div>
             </div>
 
-            <div class="col-md-3">
-              <label class="form-label">Tipo</label>
-              <select class="form-select">
-                <option>Adicionar</option>
-                <option>Remover</option>
-              </select>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary px-4">Salvar Alteração</button>
             </div>
-
-            <div class="col-md-3">
-              <label class="form-label">Pontos</label>
-              <input type="number" class="form-control">
-            </div>
-
-            <div class="col-12">
-              <label class="form-label">Observação</label>
-              <textarea class="form-control" rows="3" placeholder="Informe o motivo da alteração..."></textarea>
-            </div>
-          </div>
-
-          <div class="mt-4 d-flex gap-2">
-            <button class="btn btn-success">Adicionar Pontos</button>
-            <button class="btn btn-danger">Remover Pontos</button>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -125,31 +134,51 @@
         </div>
 
         <div class="card-body">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Data</th>
-                <th>Aluno</th>
-                <th>Tipo</th>
-                <th>Pontos</th>
-                <th>Total Atual</th>
-                <th>Observação</th>
-                <th>Professor</th>
-              </tr>
-            </thead>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Aluno</th>
+                  <th>Turma</th>
+                  <th>Tipo</th>
+                  <th>Pontos</th>
+                  <th>Observação</th>
+                  <th>Responsável</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr>
-                <td>10/06/2026 14:30</td>
-                <td>João Pedro</td>
-                <td><span class="badge text-bg-success">+ Pontos</span></td>
-                <td>+10</td>
-                <td><strong>120</strong></td>
-                <td>Participou da atividade Maker.</td>
-                <td>Professor Diego</td>
-              </tr>
-            </tbody>
-          </table>
+              <tbody>
+                <% if (typeof pontuacoes !== 'undefined' && pontuacoes.length > 0) { %>
+                  <% pontuacoes.forEach(p => { %>
+                    <tr>
+                      <td><%= p.dataHora %></td>
+                      <td><strong><%= p.nomeAluno %></strong></td>
+                      <td><%= p.turma || '---' %></td>
+                      <td>
+                        <% if (p.tipo === 'adicionar') { %>
+                          <span class="badge text-bg-success">+ Adicionados</span>
+                        <% } else { %>
+                          <span class="badge text-bg-danger">- Retirados</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <strong class="<%= p.tipo === 'adicionar' ? 'text-success' : 'text-danger' %>">
+                          <%= p.tipo === 'adicionar' ? '+' : '-' %><%= p.pontos %>
+                        </strong>
+                      </td>
+                      <td><%= p.motivo %></td>
+                      <td><i class="bi bi-person me-1"></i><%= p.responsavel %></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Nenhuma alteração de pontuação registrada no momento.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -158,5 +187,31 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/dashboard.js"></script>
+
+  <script>
+    document.getElementById('alunoBusca').addEventListener('input', function(e) {
+      const input = e.target;
+      const list = document.getElementById('listaAlunos');
+      const options = list.options;
+      const hiddenInput = document.getElementById('alunoId');
+      
+      hiddenInput.value = ""; 
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].value === input.value) {
+          hiddenInput.value = options[i].getAttribute('data-id');
+          break;
+        }
+      }
+    });
+
+    // Bloqueia o envio se o usuário digitar um nome que não está cadastrado
+    document.getElementById('formPontuacao').addEventListener('submit', function(e) {
+      const hiddenInput = document.getElementById('alunoId');
+      if (!hiddenInput.value) {
+        e.preventDefault();
+        alert('Por favor, selecione um aluno válido da lista sugerida.');
+      }
+    });
+  </script>
 </body>
 </html>

@@ -10,8 +10,33 @@
     "password": "$2b$10$hpDx7TCMaofQzv5PVWk67../4co.CKO5msbKGWcLCIDp5CrtJ45m."
   },
   {
+<<<<<<< HEAD
     "nome": "teste",
     "login": "teste",
     "password": "$2b$10$ZmIcYuKGW61M7FiB1dYMB.clK8fM3mxqoulyuIRtQ4yVzmAx4Ogzq"
+=======
+    "nome": "Jenifer de Andrade",
+    "cpf": "106.987.772-89",
+    "login": "jeninha",
+    "password": "$2b$10$hlNZCP0vWb6HUC8XqM8x7.OyUrySLZ7.bSwNvTZUIKMEE8S6vkHnK"
+  },
+  {
+    "nome": "Jeni teste",
+    "cpf": "222.333.444-11",
+    "login": "testej",
+    "password": "$2b$10$eSgn1jKvpKkVwqcYLBy/euLMf/yGU8gLYiIudkbYn/qHVDZ2JN06G"
+  },
+  {
+    "nome": "testebd",
+    "cpf": "666.777.888-99",
+    "login": "bdteste",
+    "password": "$2b$10$w/ZLnSbLuyDJt5YUyEYLkOwTMpHQ2b/3n2RuWLq1vF4.u.oPXX9y6"
+  },
+  {
+    "nome": "testebd2",
+    "cpf": "123.412.341-23",
+    "login": "testebd2",
+    "password": "$2b$10$WVjq9mbp7I73AN9o3fKWK.u12xYYumJ11CfFtHHIdlQ1x8MmfThF2"
+>>>>>>> 8f05ce5 (Integração das telas de front e back end com o banco de dados e front end do controle de ocorrências)
   }
 ]
