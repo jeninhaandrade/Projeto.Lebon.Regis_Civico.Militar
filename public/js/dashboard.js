@@ -8,6 +8,34 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  const menuSidebar = sidebar.querySelector('.sidebar-menu');
+  const itensSidebar = menuSidebar ? Array.from(menuSidebar.querySelectorAll('[data-sidebar-item]')) : [];
+  const itemAtivoSidebar = itensSidebar.find(item => item.classList.contains('active')) || itensSidebar[0];
+
+  const moverIndicadorSidebar = (item) => {
+    if (!menuSidebar || !item) {
+      return;
+    }
+
+    const posicaoMenu = menuSidebar.getBoundingClientRect();
+    const posicaoItem = item.getBoundingClientRect();
+    const topoItem = posicaoItem.top - posicaoMenu.top + menuSidebar.scrollTop;
+
+    menuSidebar.style.setProperty('--sidebar-indicator-top', `${topoItem}px`);
+    menuSidebar.style.setProperty('--sidebar-indicator-height', `${item.offsetHeight}px`);
+    menuSidebar.classList.add('sidebar-menu-ready');
+  };
+
+  if (menuSidebar && itemAtivoSidebar) {
+    moverIndicadorSidebar(itemAtivoSidebar);
+
+    itensSidebar.forEach((item) => {
+      item.addEventListener('click', () => moverIndicadorSidebar(item));
+    });
+
+    window.addEventListener('resize', () => moverIndicadorSidebar(itemAtivoSidebar));
+  }
+
   toggleSidebar.addEventListener('click', () => {
     sidebar.classList.toggle('sidebar-collapsed');
     mainContent.classList.toggle('expanded');
@@ -21,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
       icon.classList.remove('bi-list');
       icon.classList.add('bi-x-lg');
     }
+
+    setTimeout(() => moverIndicadorSidebar(itemAtivoSidebar), 320);
   });
 
   const tabelaPresencas = document.getElementById('tabelaPresencas');
